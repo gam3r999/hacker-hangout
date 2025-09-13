@@ -1,4 +1,4 @@
-// chat.js — ready-to-use, no module needed
+// chat.js — full, no export, ready for any browser
 function initChat({ db, ref, push, set, onValue, remove }) {
   const chatEl = document.getElementById('chat');
   const userEl = document.getElementById('username');
@@ -72,10 +72,25 @@ function initChat({ db, ref, push, set, onValue, remove }) {
     adminUserEl.value=''; adminPassEl.value='';
   }
 
-  function banUser(){ const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); set(ref(db,'banned/'+u),true); banUserEl.value=''; }
-  function unbanUser(){ const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); remove(ref(db,'banned/'+u)); unbanUserEl.value=''; }
-  function clearChat(){ if(confirm('Clear all messages?')) remove(messagesRef); }
+  function banUser(){ 
+    const u=(banUserEl.value||'').trim(); 
+    if(!u) return alert('Enter username'); 
+    set(ref(db,'banned/'+u),true); 
+    banUserEl.value=''; 
+  }
 
+  function unbanUser(){ 
+    const u=(unbanUserEl.value||'').trim(); 
+    if(!u) return alert('Enter username'); 
+    remove(ref(db,'banned/'+u)); 
+    unbanUserEl.value=''; 
+  }
+
+  function clearChat(){ 
+    if(confirm('Clear all messages?')) remove(messagesRef); 
+  }
+
+  // Event listeners
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter') sendMessage();});
   adminLoginBtn.addEventListener('click',loginAdmin);
@@ -87,6 +102,9 @@ function initChat({ db, ref, push, set, onValue, remove }) {
   onValue(messagesRef,snap=>{ messages = snap.exists()? Object.values(snap.val()):[]; renderMessages(); });
   onValue(bannedRef,snap=>{ banned = snap.exists()? snap.val():{}; renderMessages(); });
   onValue(devicesRef,snap=>{ usedDevices = snap.exists()? snap.val():{}; });
+
+  // INITIAL RENDER
+  renderMessages();
 }
 
 // expose globally

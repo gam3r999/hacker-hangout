@@ -1,121 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Hacker Hangout</title>
-  <style>
-    html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:'Courier New', monospace; background:black; color:#0f0;}
-    canvas { position:fixed; top:0; left:0; z-index:-1; }
-    #chat { position:relative; z-index:1; height:400px; overflow-y:scroll; padding:10px; border:1px solid #0f0; margin:10px; background: rgba(0,0,0,0.8);}
-    .msg { margin-bottom:6px; }
-    .msg.me { color:#6ff; }
-    .msg.admin { font-weight:bold; }
-    .msg.banned { color:red; font-weight:bold; animation:flash 1s infinite; }
-    @keyframes flash { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0.3;} }
-    #inputBar { display:flex; margin:10px; }
-    #inputBar input { flex:1; margin-right:6px; padding:6px; background:black; color:#0f0; border:1px solid #0f0; }
-    #inputBar button { padding:6px 12px; background:black; color:#0f0; border:1px solid #0f0; cursor:pointer; }
-    #admin-panel { display:none; padding:10px; margin:10px; border:1px dashed #0f0; }
-    footer { margin:10px; text-align:center; font-size:0.9rem; color:#8bff8b; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hacker Hangout</title>
+<style>
+  /* MATRIX BACKGROUND */
+  body {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    background: black;
+    color: #0f0;
+    overflow: hidden;
+  }
+  canvas#matrix {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+
+  /* CHAT UI */
+  #chatContainer {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 600px;
+    background: rgba(0,0,0,0.8);
+    border: 2px solid #0f0;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+  }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 5px;
+  }
+
+  .msg {
+    padding: 5px 10px;
+    margin: 3px 0;
+    border-radius: 10px;
+    display: inline-block;
+    max-width: 80%;
+    word-wrap: break-word;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+  }
+  .msg.me { background-color: rgba(0,255,0,0.2); align-self: flex-end; }
+  .msg.other { background-color: rgba(0,255,0,0.05); align-self: flex-start; }
+  .msg.admin { border: 1px solid yellow; }
+  .msg.banned { background-color: rgba(255,0,0,0.4); animation: flashRed 0.5s infinite alternate; }
+
+  @keyframes flashRed {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+
+  #inputBar {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+  }
+  input, button {
+    font-size: 18px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #0f0;
+    background: black;
+    color: #0f0;
+  }
+  button:hover {
+    background: #0f0;
+    color: black;
+    cursor: pointer;
+  }
+
+  /* ADMIN PANEL */
+  #admin-panel {
+    display: none;
+    margin-top: 10px;
+    border-top: 1px solid #0f0;
+    padding-top: 5px;
+  }
+  #bannedList {
+    font-size: 14px;
+  }
+</style>
 </head>
 <body>
 
-  <canvas id="matrix"></canvas>
+<canvas id="matrix"></canvas>
 
-  <h1 style="text-align:center; color:#0f0;">💻 Hacker Hangout</h1>
-
+<div id="chatContainer">
   <div id="chat"></div>
-
   <div id="inputBar">
-    <input id="username" type="text" placeholder="Username">
-    <input id="message" type="text" placeholder="Message">
+    <input id="username" placeholder="Username">
+    <input id="message" placeholder="Message">
     <button id="send">Send</button>
   </div>
 
-  <div id="admin-login" style="margin:10px;">
-    <input id="adminUser" type="text" placeholder="Admin Username">
-    <input id="adminPass" type="password" placeholder="Admin Password">
-    <button id="adminLoginBtn">Login as Admin</button>
-  </div>
+  <!-- ADMIN LOGIN -->
+  <input id="adminUser" placeholder="Admin Username">
+  <input id="adminPass" placeholder="Admin Password" type="password">
+  <button id="adminLoginBtn">Login Admin</button>
 
   <div id="admin-panel">
-    <h3>Admin Panel</h3>
-    <div>
-      <input id="banUser" type="text" placeholder="Username to ban">
-      <button id="banBtn">Ban</button>
-    </div>
-    <div>
-      <input id="unbanUser" type="text" placeholder="Username to unban">
-      <button id="unbanBtn">Unban</button>
-    </div>
-    <div>
-      <button id="clearBtn">Clear Chat</button>
-    </div>
-    <p>Banned Users: <span id="bannedList">(none)</span></p>
+    <input id="banUser" placeholder="Ban Username">
+    <button id="banBtn">Ban</button>
+    <input id="unbanUser" placeholder="Unban Username">
+    <button id="unbanBtn">Unban</button>
+    <button id="clearBtn">Clear Chat</button>
+    <div>Banned Users: <span id="bannedList">(none)</span></div>
   </div>
+</div>
 
-  <footer>
-    &copy; 2025 Gam3r999. All rights reserved.<br>
-    <small>⚠️ WARNING: Client-side admin is NOT secure. Abuse is expected. Enter at your own risk.</small>
-  </footer>
+<!-- Firebase Scripts -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
-  <!-- Firebase snippet -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
+    authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
+    databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
+    projectId: "hacker-hangout-gam3r999",
+    storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
+    messagingSenderId: "411445080851",
+    appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
+    measurementId: "G-X880BXHHRE"
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
-      authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
-      databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
-      projectId: "hacker-hangout-gam3r999",
-      storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
-      messagingSenderId: "411445080851",
-      appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
-      measurementId: "G-X880BXHHRE"
-    };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const analytics = getAnalytics(app);
+  window.CloudDB = { db, ref, push, set, onValue, remove };
+</script>
 
-    window.CloudDB = { db, ref, push, set, onValue, remove };
-  </script>
+<script src="chat.js"></script>
+<script>
+  // MATRIX EFFECT
+  const canvas = document.getElementById("matrix");
+  const ctx = canvas.getContext("2d");
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+  const cols = Math.floor(w / 20) + 1;
+  const ypos = Array(cols).fill(0);
 
-  <!-- Matrix background -->
-  <script>
-    const canvas = document.getElementById('matrix');
-    const ctx = canvas.getContext('2d');
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
-    const fontSize = 16;
-    const columns = Math.floor(w / fontSize);
-    const drops = Array(columns).fill(1);
-
-    function draw() {
-      ctx.fillStyle = "rgba(0,0,0,0.05)";
-      ctx.fillRect(0,0,w,h);
-      ctx.fillStyle = "#0f0";
-      ctx.font = fontSize + "px monospace";
-      for(let i=0; i<drops.length; i++){
-        const text = letters[Math.floor(Math.random()*letters.length)];
-        ctx.fillText(text,i*fontSize,drops[i]*fontSize);
-        drops[i]++;
-        if(drops[i]*fontSize>h && Math.random()>0.975) drops[i]=0;
-      }
+  function matrix() {
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = "#0f0";
+    ctx.font = "20px monospace";
+    for(let i=0; i<ypos.length; i++){
+      const text = String.fromCharCode(33 + Math.random()*94);
+      ctx.fillText(text,i*20,ypos[i]*20);
+      if(ypos[i]*20 > h && Math.random() > 0.975) ypos[i]=0;
+      ypos[i]++;
     }
-    setInterval(draw,33);
-    window.addEventListener('resize',()=>{
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    });
-  </script>
-
-  <!-- Chat script with device alt detection -->
-  <script src="chat.js"></script>
+    requestAnimationFrame(matrix);
+  }
+  matrix();
+  window.addEventListener('resize', ()=>{ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; });
+</script>
 
 </body>
 </html>

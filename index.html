@@ -123,12 +123,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// CALL chat.js directly
-// Make sure chat.js is loaded via <script src="chat.js"></script> BEFORE this
-initChat({ db, ref, push, set, onValue, remove });
+// CALL chat.js initChat directly
+// Make sure chat.js is loaded normally BEFORE this script runs
+window.addEventListener('load', () => {
+  initChat({ db, ref, push, set, onValue, remove });
+});
 </script>
 
-<!-- LOAD chat.js -->
+<!-- LOAD chat.js normally -->
 <script src="chat.js"></script>
 
 <!-- MATRIX EFFECT -->
@@ -151,7 +153,7 @@ function draw(){
   for(let i=0;i<drops.length;i++){
     const text=letters[Math.floor(Math.random()*letters.length)];
     ctx.fillText(text,i*fontSize,drops[i]*fontSize);
-    if(drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+    if (drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
     drops[i]++;
   }
 }

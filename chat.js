@@ -1,4 +1,5 @@
-export function initChat({ db, ref, push, set, onValue, remove }) {
+// chat.js — ready-to-use, no module needed
+function initChat({ db, ref, push, set, onValue, remove }) {
   const chatEl = document.getElementById('chat');
   const userEl = document.getElementById('username');
   const msgEl = document.getElementById('message');
@@ -16,7 +17,7 @@ export function initChat({ db, ref, push, set, onValue, remove }) {
 
   const messagesRef = ref(db, 'messages');
   const bannedRef = ref(db, 'banned');
-  const devicesRef = ref(db, 'devices'); // for device/IP tracking
+  const devicesRef = ref(db, 'devices');
 
   const ADMINS = { "adminsonlylol": "thisadminwilleventuallybeabused" };
 
@@ -27,7 +28,7 @@ export function initChat({ db, ref, push, set, onValue, remove }) {
   let messages = [], banned = {}, usedDevices = {};
 
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
-  
+
   function renderMessages(){
     chatEl.innerHTML='';
     messages.forEach(m=>{
@@ -72,4 +73,21 @@ export function initChat({ db, ref, push, set, onValue, remove }) {
   }
 
   function banUser(){ const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); set(ref(db,'banned/'+u),true); banUserEl.value=''; }
-  function unbanUser(){
+  function unbanUser(){ const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); remove(ref(db,'banned/'+u)); unbanUserEl.value=''; }
+  function clearChat(){ if(confirm('Clear all messages?')) remove(messagesRef); }
+
+  sendBtn.addEventListener('click',sendMessage);
+  msgEl.addEventListener('keydown',e=>{if(e.key==='Enter') sendMessage();});
+  adminLoginBtn.addEventListener('click',loginAdmin);
+  banBtn.addEventListener('click',banUser);
+  unbanBtn.addEventListener('click',unbanUser);
+  clearBtn.addEventListener('click',clearChat);
+
+  // LISTEN TO FIREBASE
+  onValue(messagesRef,snap=>{ messages = snap.exists()? Object.values(snap.val()):[]; renderMessages(); });
+  onValue(bannedRef,snap=>{ banned = snap.exists()? snap.val():{}; renderMessages(); });
+  onValue(devicesRef,snap=>{ usedDevices = snap.exists()? snap.val():{}; });
+}
+
+// expose globally
+window.initChat = initChat;

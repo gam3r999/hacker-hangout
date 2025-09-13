@@ -11,6 +11,7 @@ body {
   background:black;
   color:#0f0;
   overflow:hidden;
+  cursor: url('https://i.imgur.com/nHg0JSz.png'), auto;
 }
 canvas#matrix {
   position:fixed;
@@ -57,7 +58,7 @@ h1#banner {
 .msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
 @keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
 #input-container { display:flex; margin-top:5px; }
-#username,#message { flex:1; padding:5px; font-family: monospace; }
+#username,#message,#fileInput { flex:1; padding:5px; font-family: monospace; }
 #send { padding:5px; }
 #admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
 #admin-panel input { margin:2px; padding:2px; }
@@ -73,6 +74,7 @@ h1#banner {
   <div id="input-container">
     <input id="username" placeholder="Your username">
     <input id="message" placeholder="Your message">
+    <input type="file" id="fileInput">
     <button id="send">Send</button>
   </div>
 
@@ -95,6 +97,7 @@ h1#banner {
 <!-- Firebase Compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-storage-compat.js"></script>
 
 <!-- Initialize Firebase -->
 <script>

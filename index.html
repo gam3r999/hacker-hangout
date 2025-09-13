@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hacker Hangout</title>
 <style>
-  /* MATRIX BACKGROUND */
   body {
     margin: 0;
     font-family: 'Courier New', monospace;
@@ -20,7 +19,6 @@
     z-index: -1;
   }
 
-  /* CHAT STYLES */
   #chat-container {
     display: flex;
     flex-direction: column;
@@ -73,7 +71,6 @@
   #username,#message { flex:1; padding:5px; font-family: monospace; }
   #send { padding:5px; }
   
-  /* ADMIN PANEL */
   #admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
   #admin-panel input { margin:2px; padding:2px; }
 </style>
@@ -107,7 +104,7 @@
   <div>Banned users: <span id="bannedList">(none)</span></div>
 </div>
 
-<!-- FIREBASE -->
+<!-- FIREBASE SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
@@ -126,11 +123,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// Initialize chat
-import("./chat.js").then(module => {
-  module.initChat({ db, ref, push, set, onValue, remove });
-});
+// CALL chat.js directly
+// Make sure chat.js is loaded via <script src="chat.js"></script> BEFORE this
+initChat({ db, ref, push, set, onValue, remove });
 </script>
+
+<!-- LOAD chat.js -->
+<script src="chat.js"></script>
 
 <!-- MATRIX EFFECT -->
 <script>

@@ -1,157 +1,157 @@
-// chat.js — Firebase multi-device chat with admin, banning, device-alt detection, GIF support
-(function(){
-  const chatEl=document.getElementById('chat');
-  const userEl=document.getElementById('username');
-  const msgEl=document.getElementById('message');
-  const sendBtn=document.getElementById('send');
-  const adminUserEl=document.getElementById('adminUser');
-  const adminPassEl=document.getElementById('adminPass');
-  const adminLoginBtn=document.getElementById('adminLoginBtn');
-  const adminPanel=document.getElementById('admin-panel');
-  const banUserEl=document.getElementById('banUser');
-  const unbanUserEl=document.getElementById('unbanUser');
-  const banBtn=document.getElementById('banBtn');
-  const unbanBtn=document.getElementById('unbanBtn');
-  const clearBtn=document.getElementById('clearBtn');
-  const bannedListEl=document.getElementById('bannedList');
+window.initChat = function() {
+  const db = window.db;
+  const messagesRef = db.ref("messages");
+  const bannedRef = db.ref("banned");
 
-  const gifSearchEl=document.getElementById('gifSearch');
-  const gifBtn=document.getElementById('gifBtn');
-  const gifResultsEl=document.getElementById('gifResults');
+  const chatEl = document.getElementById("chat-container");
+  const userEl = document.getElementById("username");
+  const msgEl = document.getElementById("message");
+  const sendBtn = document.getElementById("send");
 
-  const DEFAULT_ADMINS={ "adminsonlylol":"thisadminwilleventuallybeabused" };
-  let admins={...DEFAULT_ADMINS};
-  let bannedUsers={};
+  const adminUserEl = document.getElementById("adminUser");
+  const adminPassEl = document.getElementById("adminPass");
+  const adminLoginBtn = document.getElementById("adminLoginBtn");
+  const adminPanel = document.getElementById("admin-panel");
+  const banUserEl = document.getElementById("banUser");
+  const unbanUserEl = document.getElementById("unbanUser");
+  const banBtn = document.getElementById("banBtn");
+  const unbanBtn = document.getElementById("unbanBtn");
+  const bannedListEl = document.getElementById("bannedList");
+  const nukeBtn = document.getElementById("nukeBtn");
 
-  // device-alt detection
-  let deviceId=localStorage.getItem('hh_device_id');
-  if(!deviceId){deviceId=Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem('hh_device_id',deviceId);}
+  const nukeOverlay = document.getElementById("nukeOverlay");
+  const nukeBomb = document.getElementById("nukeBomb");
 
-  const db=firebase.database();
-  const messagesRef=db.ref('messages');
-  const bannedRef=db.ref('banned');
-  const devicesRef=db.ref('devices');
+  // Admin creds (intentionally weak for "abuse")
+  const ADMINS = { "admin": "thisadminwilleventuallybeabused" };
 
-  const TENOR_API_KEY = "AIzaSyBnc_Nq9s66-0n9d-M8FZ3GIw1POVByeNs"; // <-- replace with your key
+  // Device fingerprint
+  const deviceId = localStorage.getItem("hh_device_id") || (Date.now()+"_"+Math.random());
+  localStorage.setItem("hh_device_id", deviceId);
 
-  function escapeHtml(str){ return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+  let bannedUsers = {};
+  let nukeActive = false;
 
-  function renderMessages(arr){
-    chatEl.innerHTML='';
-    arr.forEach(m=>{
-      if(bannedUsers[m.username]) return;
-      const div=document.createElement('div');
-      div.className='msg '+((m.username==(userEl.value||'Anonymous')?'me':'other'));
-      if(admins[m.username]) div.classList.add('admin');
+  // ===== Matrix background =====
+  const canvas = document.getElementById("matrix");
+  const ctx = canvas.getContext("2d");
+  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth;
+  const letters = "01";
+  const fontSize = 14;
+  const columns = canvas.width / fontSize;
+  const drops = Array(Math.floor(columns)).fill(1);
 
-      // GIF rendering
-      if(m.text.match(/\.(gif)$/i)){
-        div.innerHTML=`<strong>${escapeHtml(m.username)}</strong>:<br><img src="${m.text}" style="max-width:200px;border-radius:5px;">`;
-      } else {
-        div.innerHTML=`<strong>${escapeHtml(m.username)}</strong>: ${escapeHtml(m.text)}`;
-      }
-
-      chatEl.appendChild(div);
+  function drawMatrix() {
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0f0";
+    ctx.font = fontSize + "px monospace";
+    drops.forEach((y, i) => {
+      const text = letters[Math.floor(Math.random()*letters.length)];
+      ctx.fillText(text, i*fontSize, y*fontSize);
+      if (y*fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
     });
-    chatEl.scrollTop=chatEl.scrollHeight;
   }
+  setInterval(drawMatrix, 33);
 
-  function flashBanned(username,text){
-    const div=document.createElement('div');
-    div.className='msg banned';
-    div.innerHTML=`<strong>${escapeHtml(username)}</strong>: ${escapeHtml(text)}`;
+  // ===== Chat rendering =====
+  function renderMessage(m) {
+    if (bannedUsers[m.username]) return;
+    const div = document.createElement("div");
+    div.className = "msg " + (m.username === userEl.value ? "me" : "other");
+    if (m.admin) div.classList.add("admin");
+    div.innerHTML = `<strong>${m.username}</strong>: ${m.text}`;
     chatEl.appendChild(div);
-    chatEl.scrollTop=chatEl.scrollHeight;
-    setTimeout(()=>div.remove(),2000);
+    chatEl.scrollTop = chatEl.scrollHeight;
   }
 
-  function sendMessage(){
-    const username=(userEl.value||'Anonymous').trim();
-    const text=(msgEl.value||'').trim();
-    if(!text) return;
-    if(bannedUsers[username]){ flashBanned(username,text); msgEl.value=''; return;}
-    devicesRef.child(username+'_'+deviceId).set({ timestamp:Date.now() });
-    messagesRef.push({ username,text,timestamp:Date.now(),deviceId });
-    msgEl.value='';
-  }
-
-  function loginAdmin(){
-    const u=(adminUserEl.value||'').trim();
-    const p=(adminPassEl.value||'').trim();
-    if(!u||!p) return alert('Enter admin username & password');
-    if(admins[u]&&admins[u]===p){ adminPanel.style.display='block'; alert('Logged in as admin: '+u); sessionStorage.setItem('hh_admin_user',u);}
-    else alert('Wrong admin credentials');
-    adminUserEl.value=''; adminPassEl.value='';
-  }
-
-  function updateBannedListUI(){
-    bannedListEl.textContent=Object.keys(bannedUsers).length?Object.keys(bannedUsers).join(', '):'(none)';
-  }
-
-  function banUser(){
-    const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); bannedRef.child(u).set(true);
-    banUserEl.value='';
-  }
-
-  function unbanUser(){
-    const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); bannedRef.child(u).remove();
-    unbanUserEl.value='';
-  }
-
-  function clearChat(){ if(!confirm('Clear all messages?')) return; messagesRef.remove(); }
-
-  // GIF search
-  function searchGIFs(){
-    const query=gifSearchEl.value.trim();
-    if(!query) return;
-    fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=8`)
-      .then(res=>res.json())
-      .then(data=>{
-        gifResultsEl.innerHTML='';
-        data.results.forEach(gif=>{
-          const url=gif.media_formats.gif.url;
-          const img=document.createElement('img');
-          img.src=url;
-          img.style.width='80px';
-          img.style.height='80px';
-          img.style.margin='5px';
-          img.style.cursor='pointer';
-          img.addEventListener('click',()=>sendGIF(url));
-          gifResultsEl.appendChild(img);
-        });
-      });
-  }
-
-  function sendGIF(url){
-    const username=(userEl.value||'Anonymous').trim();
-    if(bannedUsers[username]){ flashBanned(username,url); return; }
-    messagesRef.push({ username, text:url, timestamp:Date.now(), deviceId });
-    gifResultsEl.innerHTML='';
-    gifSearchEl.value='';
-  }
-
-  // Event listeners
-  sendBtn.addEventListener('click',sendMessage);
-  msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
-  adminLoginBtn.addEventListener('click',loginAdmin);
-  banBtn.addEventListener('click',banUser);
-  unbanBtn.addEventListener('click',unbanUser);
-  clearBtn.addEventListener('click',clearChat);
-  gifBtn.addEventListener('click',searchGIFs);
-
-  // Firebase listeners
-  messagesRef.on('value',snapshot=>{
-    const msgs=[]; snapshot.forEach(child=>msgs.push(child.val()));
-    renderMessages(msgs);
+  // Listen for messages
+  messagesRef.on("child_added", snap => {
+    renderMessage(snap.val());
   });
 
-  bannedRef.on('value',snapshot=>{
-    bannedUsers={}; snapshot.forEach(child=>{ bannedUsers[child.key]=true; });
-    updateBannedListUI();
+  // Listen for bans
+  bannedRef.on("value", snap => {
+    bannedUsers = snap.val() || {};
+    bannedListEl.textContent = Object.keys(bannedUsers).join(", ") || "(none)";
   });
 
-  // Auto-show admin if logged in
-  const sessionAdmin=sessionStorage.getItem('hh_admin_user');
-  if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
+  // Send message
+  sendBtn.onclick = () => {
+    if (nukeActive) { alert("Chat nuked! Wait..."); return; }
+    const u = userEl.value || "Anonymous";
+    const t = msgEl.value.trim();
+    if (!t) return;
+    if (bannedUsers[u] || bannedUsers[deviceId]) {
+      const div = document.createElement("div");
+      div.className = "msg banned";
+      div.textContent = `${u}: ${t}`;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
+      setTimeout(()=>div.remove(),2000);
+      msgEl.value = "";
+      return;
+    }
+    messagesRef.push({ username: u, text: t, timestamp: Date.now(), device: deviceId });
+    msgEl.value = "";
+  };
 
-})();
+  // ===== Admin actions =====
+  adminLoginBtn.onclick = () => {
+    const u = adminUserEl.value;
+    const p = adminPassEl.value;
+    if (ADMINS[u] && ADMINS[u] === p) {
+      adminPanel.style.display = "block";
+      alert("Admin logged in: " + u);
+    } else {
+      alert("Wrong creds");
+    }
+    adminUserEl.value = "";
+    adminPassEl.value = "";
+  };
+
+  banBtn.onclick = () => {
+    const u = banUserEl.value.trim();
+    if (u) bannedRef.child(u).set(true);
+    banUserEl.value = "";
+  };
+  unbanBtn.onclick = () => {
+    const u = unbanUserEl.value.trim();
+    if (u) bannedRef.child(u).remove();
+    unbanUserEl.value = "";
+  };
+
+  // ===== Nuke =====
+  function triggerNuke() {
+    nukeOverlay.style.display = "flex";
+    nukeBomb.style.left = "-120px";
+    nukeBomb.style.top = "40%";
+
+    // Animate bomb across screen
+    let pos = -120;
+    const fly = setInterval(() => {
+      pos += 10;
+      nukeBomb.style.left = pos + "px";
+      if (pos > window.innerWidth) {
+        clearInterval(fly);
+        nukeOverlay.classList.add("explosion");
+        nukeBomb.style.display = "none";
+        document.body.classList.add("shake-screen");
+
+        setTimeout(()=>document.body.classList.remove("shake-screen"), 5000);
+
+        // lock chat for 5 mins
+        nukeActive = true;
+        setTimeout(()=>{
+          nukeOverlay.style.display="none";
+          nukeOverlay.classList.remove("explosion");
+          nukeBomb.style.display="block";
+          nukeActive = false;
+        }, 300000);
+      }
+    }, 50);
+  }
+  nukeBtn.onclick = triggerNuke;
+};

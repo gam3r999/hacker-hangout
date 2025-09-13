@@ -19,33 +19,55 @@
 
   const messagesRef = ref(db, 'messages');
   const bannedRef = ref(db, 'banned');
-  const deviceUsersRef = ref(db, 'device_users');
 
+  // HARD-CODED ADMIN LOGIN
+  const ADMINS = { "adminsonlylol": "thisadminwilleventuallybeabused" };
+
+  // DEVICE ID
   let DEVICE_ID = localStorage.getItem('hh_device_id');
   if(!DEVICE_ID){ DEVICE_ID = Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem('hh_device_id',DEVICE_ID); }
 
-  let messages = [], banned = {}, admins = JSON.parse(sessionStorage.getItem('hh_admins')||'null')||{ "adminsonlylol":"thisadminwilleventuallybeabused" };
+  let messages = [], banned = {};
 
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
-  function renderMessages(){ chatEl.innerHTML=''; messages.forEach(m=>{ if(banned[m.username]) return; const d=document.createElement('div'); d.className='msg '+((m.username==(userEl.value||'Anonymous'))?'me':'other'); if(admins[m.username]) d.classList.add('admin'); d.innerHTML=`<strong>${escapeHtml(m.username)}</strong>: ${escapeHtml(m.text)}`; chatEl.appendChild(d); }); chatEl.scrollTop=chatEl.scrollHeight; }
-  function updateBannedListUI(){ bannedListEl.textContent = Object.keys(banned).length ? Object.keys(banned).join(', ') : '(none)'; }
-  function flashBanned(u,t){ const div=document.createElement('div'); div.className='msg banned'; div.innerHTML=`<strong>${escapeHtml(u)}</strong>: ${escapeHtml(t)}`; chatEl.appendChild(div); chatEl.scrollTop=chatEl.scrollHeight; setTimeout(()=>div.remove(),2000); }
+  function renderMessages(){
+    chatEl.innerHTML='';
+    messages.forEach(m=>{
+      if(banned[m.username]) return;
+      const d=document.createElement('div');
+      d.className='msg '+((m.username==(userEl.value||'Anonymous'))?'me':'other');
+      if(ADMINS[m.username]) d.classList.add('admin');
+      d.innerHTML=`<strong>${escapeHtml(m.username)}</strong>: ${escapeHtml(m.text)}`;
+      chatEl.appendChild(d);
+    });
+    chatEl.scrollTop=chatEl.scrollHeight;
+  }
+
+  function flashBanned(u,t){
+    const div=document.createElement('div'); div.className='msg banned';
+    div.innerHTML=`<strong>${escapeHtml(u)}</strong>: ${escapeHtml(t)}`;
+    chatEl.appendChild(div);
+    chatEl.scrollTop=chatEl.scrollHeight;
+    setTimeout(()=>div.remove(),2000);
+  }
 
   function sendMessage(){
-    const username=(userEl.value||'Anonymous').trim(), text=(msgEl.value||'').trim(); if(!text) return;
-    const userRef = ref(db, `device_users/${DEVICE_ID}/${username}`);
-    set(userRef, { lastUsed: Date.now() });
-
-    if(banned[username]) { flashBanned(username,text); msgEl.value=''; return; }
-
-    push(messagesRef,{id:Date.now().toString(36)+Math.random().toString(36).slice(2,8), username, text, timestamp:Date.now(), device:DEVICE_ID});
+    const username=(userEl.value||'Anonymous').trim(), text=(msgEl.value||'').trim();
+    if(!text) return;
+    if(banned[username]){ flashBanned(username,text); msgEl.value=''; return; }
+    push(messagesRef,{ username, text, timestamp:Date.now(), device:DEVICE_ID });
     msgEl.value='';
   }
 
-  function loginAdmin(){ const u=(adminUserEl.value||'').trim(), p=(adminPassEl.value||'').trim(); if(!u||!p){ alert('Enter admin username/password'); return; } if(admins[u]&&admins[u]===p){ adminPanel.style.display='block'; sessionStorage.setItem('hh_admin_user',u); sessionStorage.setItem('hh_admins',JSON.stringify(admins)); alert('Logged in as admin:'+u); } else { alert('Wrong admin credentials'); } adminUserEl.value=''; adminPassEl.value=''; }
+  function loginAdmin(){
+    const u=(adminUserEl.value||'').trim(), p=(adminPassEl.value||'').trim();
+    if(ADMINS[u]===p){ adminPanel.style.display='block'; alert('Logged in as admin: '+u); } else { alert('Wrong admin credentials'); }
+    adminUserEl.value=''; adminPassEl.value='';
+  }
+
   function banUser(){ const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); set(ref(db,'banned/'+u),true); banUserEl.value=''; }
   function unbanUser(){ const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); remove(ref(db,'banned/'+u)); unbanUserEl.value=''; }
-  function clearChat(){ if(!confirm('Clear all messages?')) return; remove(messagesRef); }
+  function clearChat(){ if(confirm('Clear all messages?')) remove(messagesRef); }
 
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter') sendMessage();});
@@ -54,8 +76,6 @@
   unbanBtn.addEventListener('click',unbanUser);
   clearBtn.addEventListener('click',clearChat);
 
-  const sessionAdmin = sessionStorage.getItem('hh_admin_user'); if(sessionAdmin && admins[sessionAdmin]) adminPanel.style.display='block';
-
   onValue(messagesRef,snap=>{ messages = snap.exists()? Object.values(snap.val()):[]; renderMessages(); });
-  onValue(bannedRef,snap=>{ banned = snap.exists()? snap.val():{}; updateBannedListUI(); renderMessages(); });
+  onValue(bannedRef,snap=>{ banned = snap.exists()? snap.val():{}; renderMessages(); });
 })();

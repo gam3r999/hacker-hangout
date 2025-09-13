@@ -2,6 +2,7 @@
 (() => {
   // ===== CONFIG =====
   const DEFAULT_ADMINS = { "adminsonlylol": "thisadminwilleventuallybeabused" };
+
   const chatEl = document.getElementById('chat');
   const userEl = document.getElementById('username');
   const msgEl = document.getElementById('message');
@@ -22,8 +23,9 @@
   const { db, ref, push, set, onValue, remove } = window.CloudDB;
   const messagesRef = ref(db, 'messages');
   const bannedRef = ref(db, 'banned');
+  const deviceUsersRef = ref(db, 'device_users');
 
-  // ===== device alt detection =====
+  // ===== Device ID =====
   let DEVICE_ID = localStorage.getItem('hh_device_id');
   if (!DEVICE_ID) {
     DEVICE_ID = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
@@ -34,10 +36,14 @@
   let banned = {};
   let admins = JSON.parse(sessionStorage.getItem('hh_admins') || 'null') || DEFAULT_ADMINS;
 
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
   function renderMessages() {
     chatEl.innerHTML = '';
     messages.forEach(m => {
-      if (banned[m.username]) return; // skip banned users
+      if (banned[m.username]) return;
       const d = document.createElement('div');
       d.className = 'msg ' + ((m.username === (userEl.value || 'Anonymous')) ? 'me' : 'other');
       if (admins[m.username]) d.classList.add('admin');
@@ -52,8 +58,6 @@
     bannedListEl.textContent = names.length ? names.join(', ') : '(none)';
   }
 
-  function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
-
   function flashBanned(username, text) {
     const div = document.createElement('div');
     div.className = 'msg banned';
@@ -63,39 +67,44 @@
     setTimeout(()=> div.remove(), 2000);
   }
 
-  // ===== send message =====
+  // ===== Send message =====
   function sendMessage() {
-    const username = (userEl.value || 'Anonymous').trim();
-    const text = (msgEl.value || '').trim();
+    const username = (userEl.value||'Anonymous').trim();
+    const text = (msgEl.value||'').trim();
     if (!text) return;
 
-    // device alt detection
-    const previousNames = messages.filter(m => m.device === DEVICE_ID).map(m => m.username);
-    if (previousNames.length && !previousNames.includes(username)) {
-      alert("⚠️ Detected alt attempt on this device! Previous names: " + previousNames.join(', '));
-      flashBanned(username, text);
-      msgEl.value = '';
-      return;
-    }
+    // Device alt detection
+    onValue(ref(db, `device_users/${DEVICE_ID}`), snap => {
+      const usedNames = snap.exists() ? Object.keys(snap.val()) : [];
+      if (usedNames.length && !usedNames.includes(username)) {
+        alert("⚠️ Detected alt attempt on this device! Previous names: " + usedNames.join(', '));
+        flashBanned(username, text);
+        msgEl.value = '';
+        return;
+      } else {
+        // Store device username
+        set(ref(db, `device_users/${DEVICE_ID}/${username}`), { lastUsed: Date.now() });
+      }
 
-    if (banned[username]) {
-      flashBanned(username, text);
-      msgEl.value = '';
-      return;
-    }
+      if (banned[username]) {
+        flashBanned(username, text);
+        msgEl.value = '';
+        return;
+      }
 
-    const msgObj = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,8), username, text, timestamp: Date.now(), device: DEVICE_ID };
-    push(messagesRef, msgObj);
-    msgEl.value = '';
+      const msgObj = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,8), username, text, timestamp: Date.now(), device: DEVICE_ID };
+      push(messagesRef, msgObj);
+      msgEl.value = '';
+    }, { onlyOnce:true });
   }
 
-  // ===== admin actions =====
+  // ===== Admin actions =====
   function loginAdmin() {
     const u = (adminUserEl.value||'').trim();
     const p = (adminPassEl.value||'').trim();
-    if (!u||!p){ alert('Enter admin username and password'); return; }
+    if (!u || !p) { alert('Enter admin username and password'); return; }
     if (admins[u] && admins[u] === p) {
-      adminPanel.style.display = 'block';
+      adminPanel.style.display='block';
       sessionStorage.setItem('hh_admin_user', u);
       sessionStorage.setItem('hh_admins', JSON.stringify(admins));
       alert('Logged in as admin: '+u);
@@ -134,7 +143,7 @@
     renderMessages();
   });
 
-  // ===== wire UI =====
+  // ===== Wire UI =====
   sendBtn.addEventListener('click', sendMessage);
   msgEl.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
   adminLoginBtn.addEventListener('click', loginAdmin);
@@ -142,7 +151,7 @@
   unbanBtn.addEventListener('click', unbanUser);
   clearBtn.addEventListener('click', clearChat);
 
-  // auto-show admin panel if session has admin
+  // Auto-show admin panel if session has admin
   const sessionAdmin = sessionStorage.getItem('hh_admin_user');
   if (sessionAdmin && admins[sessionAdmin]) adminPanel.style.display='block';
 })();

@@ -1,5 +1,5 @@
-// chat.js — full Firebase multi-device chat + banning + device-alt detection + admin
-window.initChat = function({ db, ref, push, set, onValue, remove }) {
+// chat.js — Firebase multi-device chat + banning + device-alt detection + admin
+window.initChat = function() {
   const chatEl = document.getElementById('chat');
   const userEl = document.getElementById('username');
   const msgEl = document.getElementById('message');
@@ -19,13 +19,14 @@ window.initChat = function({ db, ref, push, set, onValue, remove }) {
   let admins = { ...DEFAULT_ADMINS };
   let bannedUsers = {};
 
-  // device id
+  // device-id
   let deviceId = localStorage.getItem('hh_device_id');
   if(!deviceId){ deviceId=Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem('hh_device_id',deviceId); }
 
-  const messagesRef = ref(db,'messages');
-  const bannedRef = ref(db,'banned');
-  const devicesRef = ref(db,'devices');
+  // Firebase references
+  const messagesRef = firebase.database().ref('messages');
+  const bannedRef = firebase.database().ref('banned');
+  const devicesRef = firebase.database().ref('devices');
 
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 
@@ -57,9 +58,9 @@ window.initChat = function({ db, ref, push, set, onValue, remove }) {
     if(!text) return;
     if(bannedUsers[username]) { flashBanned(username,text); msgEl.value=''; return; }
     // device-alt detection
-    set(ref(db,`devices/${username}_${deviceId}`),{ timestamp: Date.now() });
+    devicesRef.child(username+'_'+deviceId).set({ timestamp: Date.now() });
     const m={username,text,timestamp:Date.now(),deviceId};
-    push(messagesRef,m);
+    messagesRef.push(m);
     msgEl.value='';
   }
 
@@ -72,9 +73,9 @@ window.initChat = function({ db, ref, push, set, onValue, remove }) {
     adminUserEl.value=''; adminPassEl.value='';
   }
 
-  function banUser(){ const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); set(ref(db,`banned/${u}`),true); banUserEl.value=''; }
-  function unbanUser(){ const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); remove(ref(db,`banned/${u}`)); unbanUserEl.value=''; }
-  function clearChat(){ if(!confirm('Clear all messages?')) return; remove(messagesRef); }
+  function banUser(){ const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); bannedRef.child(u).set(true); banUserEl.value=''; }
+  function unbanUser(){ const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); bannedRef.child(u).remove(); unbanUserEl.value=''; }
+  function clearChat(){ if(!confirm('Clear all messages?')) return; messagesRef.remove(); }
 
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter') sendMessage();});
@@ -84,15 +85,15 @@ window.initChat = function({ db, ref, push, set, onValue, remove }) {
   clearBtn.addEventListener('click',clearChat);
 
   // sync messages
-  onValue(messagesRef,snapshot=>{
-    const data=snapshot.val(); 
+  messagesRef.on('value',snapshot=>{
+    const data=snapshot.val();
     if(!data) return renderMessages([]);
     const arr=Object.values(data).sort((a,b)=>a.timestamp-b.timestamp);
     renderMessages(arr);
   });
 
   // sync banned users
-  onValue(bannedRef,snapshot=>{
+  bannedRef.on('value',snapshot=>{
     bannedUsers=snapshot.val()||{};
     bannedListEl.textContent=Object.keys(bannedUsers).length?Object.keys(bannedUsers).join(', '):'(none)';
   });
@@ -102,18 +103,6 @@ window.initChat = function({ db, ref, push, set, onValue, remove }) {
   if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
 };
 
-// initialize chat after Firebase
 window.addEventListener('DOMContentLoaded',()=>{
-  const app = firebase.initializeApp({
-    apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
-    authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
-    databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
-    projectId: "hacker-hangout-gam3r999",
-    storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
-    messagingSenderId: "411445080851",
-    appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
-    measurementId: "G-X880BXHHRE"
-  });
-  const db = firebase.database();
-  initChat({ db, ref: firebase.database().ref, push: firebase.database().ref().push, set: firebase.database().ref().set, onValue: firebase.database().ref().on, remove: firebase.database().ref().remove });
+  initChat();
 });

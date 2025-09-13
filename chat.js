@@ -1,4 +1,4 @@
-// chat.js — Firebase multi-device chat with admin, banning, device-alt detection
+// chat.js — Firebase multi-device chat with admin, banning, device-alt detection, GIF support
 (function(){
   const chatEl=document.getElementById('chat');
   const userEl=document.getElementById('username');
@@ -15,6 +15,10 @@
   const clearBtn=document.getElementById('clearBtn');
   const bannedListEl=document.getElementById('bannedList');
 
+  const gifSearchEl=document.getElementById('gifSearch');
+  const gifBtn=document.getElementById('gifBtn');
+  const gifResultsEl=document.getElementById('gifResults');
+
   const DEFAULT_ADMINS={ "adminsonlylol":"thisadminwilleventuallybeabused" };
   let admins={...DEFAULT_ADMINS};
   let bannedUsers={};
@@ -28,6 +32,8 @@
   const bannedRef=db.ref('banned');
   const devicesRef=db.ref('devices');
 
+  const TENOR_API_KEY = "YOUR_TENOR_API_KEY_HERE"; // <-- replace with your key
+
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 
   function renderMessages(arr){
@@ -37,7 +43,14 @@
       const div=document.createElement('div');
       div.className='msg '+((m.username==(userEl.value||'Anonymous')?'me':'other'));
       if(admins[m.username]) div.classList.add('admin');
-      div.innerHTML=`<strong>${escapeHtml(m.username)}</strong>: ${escapeHtml(m.text)}`;
+
+      // GIF rendering
+      if(m.text.match(/\.(gif)$/i)){
+        div.innerHTML=`<strong>${escapeHtml(m.username)}</strong>:<br><img src="${m.text}" style="max-width:200px;border-radius:5px;">`;
+      } else {
+        div.innerHTML=`<strong>${escapeHtml(m.username)}</strong>: ${escapeHtml(m.text)}`;
+      }
+
       chatEl.appendChild(div);
     });
     chatEl.scrollTop=chatEl.scrollHeight;
@@ -87,26 +100,58 @@
 
   function clearChat(){ if(!confirm('Clear all messages?')) return; messagesRef.remove(); }
 
+  // GIF search
+  function searchGIFs(){
+    const query=gifSearchEl.value.trim();
+    if(!query) return;
+    fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(query)}&key=${TENOR_API_KEY}&limit=8`)
+      .then(res=>res.json())
+      .then(data=>{
+        gifResultsEl.innerHTML='';
+        data.results.forEach(gif=>{
+          const url=gif.media_formats.gif.url;
+          const img=document.createElement('img');
+          img.src=url;
+          img.style.width='80px';
+          img.style.height='80px';
+          img.style.margin='5px';
+          img.style.cursor='pointer';
+          img.addEventListener('click',()=>sendGIF(url));
+          gifResultsEl.appendChild(img);
+        });
+      });
+  }
+
+  function sendGIF(url){
+    const username=(userEl.value||'Anonymous').trim();
+    if(bannedUsers[username]){ flashBanned(username,url); return; }
+    messagesRef.push({ username, text:url, timestamp:Date.now(), deviceId });
+    gifResultsEl.innerHTML='';
+    gifSearchEl.value='';
+  }
+
+  // Event listeners
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
   adminLoginBtn.addEventListener('click',loginAdmin);
   banBtn.addEventListener('click',banUser);
   unbanBtn.addEventListener('click',unbanUser);
   clearBtn.addEventListener('click',clearChat);
+  gifBtn.addEventListener('click',searchGIFs);
 
-  // Listen for messages
+  // Firebase listeners
   messagesRef.on('value',snapshot=>{
-    const msgs=[]; snapshot.forEach(child=>{msgs.push(child.val());});
+    const msgs=[]; snapshot.forEach(child=>msgs.push(child.val()));
     renderMessages(msgs);
   });
 
-  // Listen for banned users
   bannedRef.on('value',snapshot=>{
-    bannedUsers={}; snapshot.forEach(child=>{bannedUsers[child.key]=true;});
+    bannedUsers={}; snapshot.forEach(child=>{ bannedUsers[child.key]=true; });
     updateBannedListUI();
   });
 
   // Auto-show admin if logged in
   const sessionAdmin=sessionStorage.getItem('hh_admin_user');
   if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
+
 })();

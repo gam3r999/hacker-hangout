@@ -5,31 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hacker Hangout</title>
 <style>
-  html, body {
-    margin: 0; padding: 0;
-    overflow: hidden;
-    height: 100%;
-    font-family: monospace;
-    background: black;
-    color: #0f0;
-    cursor: url('https://i.imgur.com/nHg0JSz.png'), auto;
-  }
-  #matrix { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
-  #chat-container {
-    position: relative;
-    z-index: 2;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 10px;
-  }
-  #chat { max-height: 400px; overflow-y: auto; margin-bottom: 10px; }
-  .msg { padding: 5px; border-radius: 5px; margin: 2px; }
-  .msg.me { background: rgba(0,255,0,0.2); }
-  .msg.other { background: rgba(0,128,0,0.2); }
-  .msg.banned { background: rgba(255,0,0,0.5); animation: flash 0.5s infinite; }
-  @keyframes flash { 0%,100%{opacity:1}50%{opacity:0.3} }
-  input, button { padding: 5px; margin: 2px; }
-  #admin-panel { display:none; border:1px solid #0f0; padding:5px; margin-bottom:5px; }
+html, body {
+  margin: 0; padding: 0; overflow: hidden; height: 100%;
+  font-family: monospace;
+  background: black;
+  color: #0f0;
+  cursor: url('https://i.imgur.com/nHg0JSz.png'), auto;
+}
+#matrix { position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+#chat-container {
+  position: relative; z-index: 2;
+  max-width: 600px; margin: 0 auto; padding: 10px;
+}
+#chat { max-height: 400px; overflow-y: auto; margin-bottom: 10px; }
+.msg { padding: 5px; border-radius: 5px; margin: 2px; }
+.msg.me { background: rgba(0,255,0,0.2); }
+.msg.other { background: rgba(0,128,0,0.2); }
+.msg.banned { background: rgba(255,0,0,0.5); animation: flash 0.5s infinite; }
+@keyframes flash { 0%,100%{opacity:1}50%{opacity:0.3} }
+input, button { padding: 5px; margin: 2px; }
+#admin-panel { display:none; border:1px solid #0f0; padding:5px; margin-bottom:5px; }
 </style>
 </head>
 <body>

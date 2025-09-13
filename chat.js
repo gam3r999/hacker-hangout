@@ -32,7 +32,7 @@
   const bannedRef=db.ref('banned');
   const devicesRef=db.ref('devices');
 
-  const TENOR_API_KEY = "YOUR_TENOR_API_KEY_HERE"; // <-- replace with your key
+  const TENOR_API_KEY = "AIzaSyBnc_Nq9s66-0n9d-M8FZ3GIw1POVByeNs"; // <-- replace with your key
 
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
 

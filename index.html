@@ -6,71 +6,70 @@
 <title>Hacker Hangout</title>
 <style>
   body {
-    margin: 0;
-    font-family: 'Courier New', monospace;
-    background: black;
-    color: #0f0;
-    overflow: hidden;
+    margin:0;
+    font-family:'Courier New', monospace;
+    background:black;
+    color:#0f0;
+    overflow:hidden;
   }
   canvas#matrix {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    z-index:-1;
   }
 
   #chatContainer {
-    position: absolute;
-    top: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 600px;
-    background: rgba(0,0,0,0.8);
-    border: 2px solid #0f0;
-    border-radius: 10px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    height: 80vh;
+    position:absolute;
+    top:50px;
+    left:50%;
+    transform:translateX(-50%);
+    width:90%;
+    max-width:600px;
+    background:rgba(0,0,0,0.85);
+    border:2px solid #0f0;
+    border-radius:10px;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    height:80vh;
   }
 
   #banner {
-    text-align: center;
-    font-size: 32px;
-    font-weight: bold;
-    color: #0f0;
-    text-shadow: 0 0 10px #0f0;
-    margin-bottom: 10px;
+    text-align:center;
+    font-size:32px;
+    font-weight:bold;
+    color:#0f0;
+    text-shadow:0 0 10px #0f0;
+    margin-bottom:10px;
   }
 
   #chat {
-    flex: 1;
-    overflow-y: auto;
+    flex:1;
+    overflow-y:auto;
     -webkit-overflow-scrolling: touch;
-    padding: 5px;
+    padding:5px;
   }
 
   .msg {
-    padding: 5px 10px;
-    margin: 3px 0;
-    border-radius: 10px;
-    display: inline-block;
-    max-width: 80%;
-    word-wrap: break-word;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
+    padding:5px 10px;
+    margin:3px 0;
+    border-radius:10px;
+    display:inline-block;
+    max-width:80%;
+    word-wrap:break-word;
+    font-family:'Courier New', monospace;
+    font-weight:bold;
   }
-  .msg.me { background-color: rgba(0,255,0,0.2); align-self: flex-end; }
-  .msg.other { background-color: rgba(0,255,0,0.05); align-self: flex-start; }
-  .msg.admin { border: 1px solid yellow; }
-  .msg.banned { background-color: rgba(255,0,0,0.4); animation: flashRed 0.5s infinite alternate; }
+  .msg.me { background-color: rgba(0,255,0,0.2); align-self:flex-end; }
+  .msg.other { background-color: rgba(0,255,0,0.05); align-self:flex-start; }
+  .msg.admin { border:1px solid yellow; }
+  .msg.banned { background-color: rgba(255,0,0,0.5); animation: flashRed 0.5s infinite alternate; }
+  @keyframes flashRed { 0%{opacity:0.5;}100%{opacity:1;} }
 
-  @keyframes flashRed { 0% {opacity:0.5;} 100%{opacity:1;} }
-
-  #inputBar { display:flex; gap:5px; margin-top:5px; flex-wrap: wrap; }
+  #inputBar { display:flex; gap:5px; margin-top:5px; flex-wrap:wrap; }
   input, button {
     font-size:18px; padding:10px; border-radius:5px; border:1px solid #0f0; background:black; color:#0f0;
   }
@@ -81,7 +80,6 @@
 </style>
 </head>
 <body>
-
 <canvas id="matrix"></canvas>
 
 <div id="chatContainer">
@@ -109,7 +107,6 @@
   </div>
 </div>
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
@@ -133,23 +130,19 @@ window.CloudDB = { db, ref, push, set, onValue, remove };
 <script src="chat.js"></script>
 
 <script>
-/* MATRIX EFFECT */
-const canvas = document.getElementById("matrix");
-const ctx = canvas.getContext("2d");
-let w = canvas.width = window.innerWidth;
-let h = canvas.height = window.innerHeight;
-const cols = Math.floor(w / 20) + 1;
-const ypos = Array(cols).fill(0);
-
-function matrix() {
-  ctx.fillStyle = "rgba(0,0,0,0.05)";
+// MATRIX EFFECT
+const canvas=document.getElementById("matrix"), ctx=canvas.getContext("2d");
+let w=canvas.width=window.innerWidth,h=canvas.height=window.innerHeight;
+const cols=Math.floor(w/20)+1; const ypos=Array(cols).fill(0);
+function matrix(){
+  ctx.fillStyle="rgba(0,0,0,0.05)";
   ctx.fillRect(0,0,w,h);
-  ctx.fillStyle = "#0f0";
-  ctx.font = "20px monospace";
+  ctx.fillStyle="#0f0";
+  ctx.font="20px monospace";
   for(let i=0;i<ypos.length;i++){
     const text=String.fromCharCode(33+Math.random()*94);
     ctx.fillText(text,i*20,ypos[i]*20);
-    if(ypos[i]*20 > h && Math.random()>0.975) ypos[i]=0;
+    if(ypos[i]*20>h && Math.random()>0.975) ypos[i]=0;
     ypos[i]++;
   }
   requestAnimationFrame(matrix);

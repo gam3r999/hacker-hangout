@@ -75,10 +75,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-window.CloudDB = { db, ref, push, set, onValue, remove };
-</script>
 
-<script src="chat.js"></script>
+// Now import chat.js as a module and pass `db` and functions
+import('./chat.js').then(module => {
+  module.initChat({ db, ref, push, set, onValue, remove });
+});
+</script>
 
 <script>
 // MATRIX EFFECT

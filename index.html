@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hacker Hangout — Local Chat</title>
+<style>
+  :root{--green:#0f0;--bright:#00ff00;--black:#000}
+  body{margin:0;height:100vh;background:var(--black);color:var(--green);font-family:monospace;display:flex;flex-direction:column;align-items:center;padding:1rem;box-sizing:border-box}
+  h1{margin:0 0 .6rem;font-size:2.2rem;animation:glitch 1s infinite}
+  @keyframes glitch{0%{text-shadow:2px 0 #f0f}20%{text-shadow:-2px -2px #0ff,2px 2px #f0f}40%{text-shadow:2px 2px #f0f,-2px -2px #0ff}60%{text-shadow:-2px 2px #0ff,2px -2px #f0}80%{text-shadow:2px -2px #f0,-2px 2px #0ff}100%{text-shadow:2px 0 #f0,-2px 0 #0ff}}
+  #chat{width:95%;max-width:900px;height:58vh;border:1px solid var(--green);padding:0.8rem;overflow:auto;background:rgba(0,0,0,0.85);border-radius:8px;display:flex;flex-direction:column;gap:0.4rem}
+  .msg{display:inline-block;padding:.4rem .6rem;border-radius:10px;max-width:80%;word-wrap:break-word}
+  .me{align-self:flex-end;background:var(--bright);color:#000;text-align:right}
+  .other{align-self:flex-start;background:var(--green);color:#000}
+  .admin{border:2px solid #f00;padding:.2rem}
+  .banned{background:#f00;color:#000;animation:flash 0.6s ease-in-out 3}
+  @keyframes flash{0%,100%{background:#f00;color:#000}50%{background:#000;color:#f00}}
+  #controls{width:95%;max-width:900px;display:flex;gap:.5rem;margin-top:.6rem}
+  input[type="text"], input[type="password"]{flex:1;padding:.6rem;border-radius:6px;border:1px solid var(--green);background:#000;color:var(--green)}
+  button{padding:.6rem 1rem;border-radius:6px;border:1px solid var(--green);background:#000;color:var(--green);cursor:pointer}
+  button:hover{background:var(--green);color:#000}
+  #admin-login{width:95%;max-width:900px;margin-top:.8rem;border-top:1px dashed rgba(0,255,0,0.15);padding-top:.8rem}
+  #admin-panel{margin-top:.6rem;background:rgba(0,0,0,0.65);padding:.6rem;border-radius:6px}
+  footer{margin-top:.6rem;color:var(--green);font-size:.85rem;text-align:center}
+  .small{font-size:.85rem;color:rgba(0,255,0,0.7)}
+  .notice{color:#ffb86b;margin-top:.4rem}
+</style>
+</head>
+<body>
+  <h1>Hacker Hangout</h1>
+
+  <div id="chat" aria-live="polite"></div>
+
+  <div id="controls">
+    <input id="username" type="text" placeholder="Your hacker name (e.g. Neo)" />
+    <input id="message" type="text" placeholder="Type message and press Enter or Send" />
+    <button id="send">Send</button>
+  </div>
+
+  <!-- Admin login -->
+  <div id="admin-login">
+    <div class="small">Admin Login (enter your admin username and password)</div>
+    <div style="display:flex;gap:.5rem;margin-top:.4rem">
+      <input id="adminUser" type="text" placeholder="Admin username" />
+      <input id="adminPass" type="password" placeholder="Admin password" />
+      <button id="adminLoginBtn">Login</button>
+    </div>
+
+    <div id="admin-panel" style="display:none;">
+      <h3 class="small">Admin Panel</h3>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <input id="banUser" type="text" placeholder="Username to ban" />
+        <button id="banBtn">Ban</button>
+        <input id="unbanUser" type="text" placeholder="Username to unban" />
+        <button id="unbanBtn">Unban</button>
+        <button id="clearBtn">Clear Chat</button>
+      </div>
+      <div class="notice">Admin actions sync across tabs automatically.</div>
+      <div style="margin-top:.6rem"><strong>Banned users:</strong> <span id="bannedList" class="small"></span></div>
+    </div>
+  </div>
+
+  <footer>&copy; 2025 Gam3r999 — Local-only chat (no server)</footer>
+
+  <script src="chat.js"></script>
+</body>
+</html>

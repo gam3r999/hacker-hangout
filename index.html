@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hacker Hangout</title>
 <style>
-  /* MATRIX BACKGROUND */
   body {
     margin: 0;
     font-family: 'Courier New', monospace;
@@ -22,10 +21,9 @@
     z-index: -1;
   }
 
-  /* CHAT UI */
   #chatContainer {
     position: absolute;
-    top: 10px;
+    top: 50px;
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
@@ -37,6 +35,15 @@
     display: flex;
     flex-direction: column;
     height: 80vh;
+  }
+
+  #banner {
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: #0f0;
+    text-shadow: 0 0 10px #0f0;
+    margin-bottom: 10px;
   }
 
   #chat {
@@ -61,40 +68,16 @@
   .msg.admin { border: 1px solid yellow; }
   .msg.banned { background-color: rgba(255,0,0,0.4); animation: flashRed 0.5s infinite alternate; }
 
-  @keyframes flashRed {
-    0% { opacity: 0.5; }
-    100% { opacity: 1; }
-  }
+  @keyframes flashRed { 0% {opacity:0.5;} 100%{opacity:1;} }
 
-  #inputBar {
-    display: flex;
-    gap: 5px;
-    margin-top: 5px;
-  }
+  #inputBar { display:flex; gap:5px; margin-top:5px; flex-wrap: wrap; }
   input, button {
-    font-size: 18px;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #0f0;
-    background: black;
-    color: #0f0;
+    font-size:18px; padding:10px; border-radius:5px; border:1px solid #0f0; background:black; color:#0f0;
   }
-  button:hover {
-    background: #0f0;
-    color: black;
-    cursor: pointer;
-  }
+  button:hover { background:#0f0; color:black; cursor:pointer; }
 
-  /* ADMIN PANEL */
-  #admin-panel {
-    display: none;
-    margin-top: 10px;
-    border-top: 1px solid #0f0;
-    padding-top: 5px;
-  }
-  #bannedList {
-    font-size: 14px;
-  }
+  #admin-panel { display:none; margin-top:10px; border-top:1px solid #0f0; padding-top:5px; }
+  #bannedList { font-size:14px; }
 </style>
 </head>
 <body>
@@ -102,14 +85,16 @@
 <canvas id="matrix"></canvas>
 
 <div id="chatContainer">
+  <div id="banner">HACKER HANGOUT</div>
   <div id="chat"></div>
+
   <div id="inputBar">
     <input id="username" placeholder="Username">
     <input id="message" placeholder="Message">
     <button id="send">Send</button>
   </div>
 
-  <!-- ADMIN LOGIN -->
+  <!-- Admin login -->
   <input id="adminUser" placeholder="Admin Username">
   <input id="adminPass" placeholder="Admin Password" type="password">
   <button id="adminLoginBtn">Login Admin</button>
@@ -124,53 +109,53 @@
   </div>
 </div>
 
-<!-- Firebase Scripts -->
+<!-- Firebase SDK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-  import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
-    authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
-    databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
-    projectId: "hacker-hangout-gam3r999",
-    storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
-    messagingSenderId: "411445080851",
-    appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
-    measurementId: "G-X880BXHHRE"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
+  authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
+  databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
+  projectId: "hacker-hangout-gam3r999",
+  storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
+  messagingSenderId: "411445080851",
+  appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
+  measurementId: "G-X880BXHHRE"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  window.CloudDB = { db, ref, push, set, onValue, remove };
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window.CloudDB = { db, ref, push, set, onValue, remove };
 </script>
 
 <script src="chat.js"></script>
-<script>
-  // MATRIX EFFECT
-  const canvas = document.getElementById("matrix");
-  const ctx = canvas.getContext("2d");
-  let w = canvas.width = window.innerWidth;
-  let h = canvas.height = window.innerHeight;
-  const cols = Math.floor(w / 20) + 1;
-  const ypos = Array(cols).fill(0);
 
-  function matrix() {
-    ctx.fillStyle = "rgba(0,0,0,0.05)";
-    ctx.fillRect(0,0,w,h);
-    ctx.fillStyle = "#0f0";
-    ctx.font = "20px monospace";
-    for(let i=0; i<ypos.length; i++){
-      const text = String.fromCharCode(33 + Math.random()*94);
-      ctx.fillText(text,i*20,ypos[i]*20);
-      if(ypos[i]*20 > h && Math.random() > 0.975) ypos[i]=0;
-      ypos[i]++;
-    }
-    requestAnimationFrame(matrix);
+<script>
+/* MATRIX EFFECT */
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+let w = canvas.width = window.innerWidth;
+let h = canvas.height = window.innerHeight;
+const cols = Math.floor(w / 20) + 1;
+const ypos = Array(cols).fill(0);
+
+function matrix() {
+  ctx.fillStyle = "rgba(0,0,0,0.05)";
+  ctx.fillRect(0,0,w,h);
+  ctx.fillStyle = "#0f0";
+  ctx.font = "20px monospace";
+  for(let i=0;i<ypos.length;i++){
+    const text=String.fromCharCode(33+Math.random()*94);
+    ctx.fillText(text,i*20,ypos[i]*20);
+    if(ypos[i]*20 > h && Math.random()>0.975) ypos[i]=0;
+    ypos[i]++;
   }
-  matrix();
-  window.addEventListener('resize', ()=>{ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; });
+  requestAnimationFrame(matrix);
+}
+matrix();
+window.addEventListener('resize',()=>{ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; });
 </script>
 
 </body>

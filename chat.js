@@ -1,11 +1,8 @@
-(() => {
-  const { db, ref, push, set, onValue, remove } = window.CloudDB;
-
+export function initChat({ db, ref, push, set, onValue, remove }) {
   const chatEl = document.getElementById('chat');
   const userEl = document.getElementById('username');
   const msgEl = document.getElementById('message');
   const sendBtn = document.getElementById('send');
-
   const adminUserEl = document.getElementById('adminUser');
   const adminPassEl = document.getElementById('adminPass');
   const adminLoginBtn = document.getElementById('adminLoginBtn');
@@ -19,17 +16,18 @@
 
   const messagesRef = ref(db, 'messages');
   const bannedRef = ref(db, 'banned');
+  const devicesRef = ref(db, 'devices'); // for device/IP tracking
 
-  // HARD-CODED ADMIN LOGIN
   const ADMINS = { "adminsonlylol": "thisadminwilleventuallybeabused" };
 
-  // DEVICE ID
+  // DEVICE/IP detection
   let DEVICE_ID = localStorage.getItem('hh_device_id');
   if(!DEVICE_ID){ DEVICE_ID = Date.now().toString(36)+Math.random().toString(36).slice(2,8); localStorage.setItem('hh_device_id',DEVICE_ID); }
 
-  let messages = [], banned = {};
+  let messages = [], banned = {}, usedDevices = {};
 
   function escapeHtml(str){ return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+  
   function renderMessages(){
     chatEl.innerHTML='';
     messages.forEach(m=>{
@@ -55,7 +53,15 @@
     const username=(userEl.value||'Anonymous').trim(), text=(msgEl.value||'').trim();
     if(!text) return;
     if(banned[username]){ flashBanned(username,text); msgEl.value=''; return; }
+
+    // DEVICE/IP alt check
+    if(usedDevices[DEVICE_ID] && usedDevices[DEVICE_ID]!==username){
+      flashBanned(username,'ALT DETECTED!');
+      msgEl.value=''; return;
+    }
+
     push(messagesRef,{ username, text, timestamp:Date.now(), device:DEVICE_ID });
+    set(ref(db,'devices/'+DEVICE_ID),username);
     msgEl.value='';
   }
 
@@ -66,16 +72,4 @@
   }
 
   function banUser(){ const u=(banUserEl.value||'').trim(); if(!u) return alert('Enter username'); set(ref(db,'banned/'+u),true); banUserEl.value=''; }
-  function unbanUser(){ const u=(unbanUserEl.value||'').trim(); if(!u) return alert('Enter username'); remove(ref(db,'banned/'+u)); unbanUserEl.value=''; }
-  function clearChat(){ if(confirm('Clear all messages?')) remove(messagesRef); }
-
-  sendBtn.addEventListener('click',sendMessage);
-  msgEl.addEventListener('keydown',e=>{if(e.key==='Enter') sendMessage();});
-  adminLoginBtn.addEventListener('click',loginAdmin);
-  banBtn.addEventListener('click',banUser);
-  unbanBtn.addEventListener('click',unbanUser);
-  clearBtn.addEventListener('click',clearChat);
-
-  onValue(messagesRef,snap=>{ messages = snap.exists()? Object.values(snap.val()):[]; renderMessages(); });
-  onValue(bannedRef,snap=>{ banned = snap.exists()? snap.val():{}; renderMessages(); });
-})();
+  function unbanUser(){

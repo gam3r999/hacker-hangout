@@ -141,7 +141,7 @@ nukeBtn.onclick=()=>{
   const audio=new Audio("https://freesound.org/data/previews/348/348852_3248244-lq.mp3");
   audio.play();
   const bomb=document.createElement("div");
-  bomb.style.width="50px"; bomb.style.height="50px"; bomb.style.backgroundImage="url('https://i.imgur.com/3KXnP3J.png')";
+  bomb.style.width="50px"; bomb.style.height="50px"; bomb.style.backgroundImage="url('https://i.imgur.com/Q64AJYC.gif')";
   bomb.style.backgroundSize="contain"; bomb.style.position="fixed"; bomb.style.top="0px"; bomb.style.left="-50px"; bomb.style.zIndex=9999;
   document.body.appendChild(bomb);
   let left=-50;
@@ -152,7 +152,7 @@ nukeBtn.onclick=()=>{
       const explosion=document.createElement("div");
       explosion.style.position="fixed"; explosion.style.top="50%"; explosion.style.left="50%";
       explosion.style.transform="translate(-50%,-50%)"; explosion.style.width="200px"; explosion.style.height="200px";
-      explosion.style.backgroundImage="url('https://i.imgur.com/OvMZBs9.png')"; explosion.style.backgroundSize="cover"; explosion.style.zIndex=10000;
+      explosion.style.backgroundImage="url('https://i.imgur.com/6hfXmtp.png')"; explosion.style.backgroundSize="cover"; explosion.style.zIndex=10000;
       document.body.appendChild(explosion);
       const body=document.body; let count=0;
       const shakeInterval=setInterval(()=>{

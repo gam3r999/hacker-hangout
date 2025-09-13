@@ -1,174 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Hacker Hangout</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Courier New', monospace;
-      background: black;
-      color: #0f0;
-      overflow: hidden;
-    }
-
-    /* Matrix canvas */
-    #matrix {
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: -1;
-      width: 100%;
-      height: 100%;
-    }
-
-    header {
-      text-align: center;
-      background: rgba(0, 0, 0, 0.8);
-      color: lime;
-      padding: 10px;
-      font-size: 24px;
-      border-bottom: 2px solid #0f0;
-    }
-
-    #chat-container {
-      height: 60vh;
-      overflow-y: auto;
-      padding: 10px;
-    }
-
-    .msg {
-      margin: 5px 0;
-      padding: 8px;
-      border-radius: 6px;
-      max-width: 70%;
-      word-wrap: break-word;
-    }
-
-    .me { background: #003300; color: #0f0; margin-left: auto; }
-    .other { background: #111; color: #0f0; margin-right: auto; }
-    .admin { border: 2px solid red; }
-
-    .banned { background: #330000; color: red; animation: flash 1s infinite; }
-    @keyframes flash {
-      0%, 100% { background: #330000; }
-      50% { background: #660000; }
-    }
-
-    #controls, #admin-panel {
-      padding: 10px;
-      background: rgba(0,0,0,0.7);
-      border-top: 2px solid #0f0;
-    }
-
-    input, button {
-      font-family: inherit;
-      margin: 3px;
-      padding: 5px;
-    }
-
-    /* Nuke overlay */
-    #nukeOverlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      overflow: hidden;
-    }
-
-    #nukeBomb {
-      width: 100px;
-      height: 100px;
-      background: url('https://cdn-icons-png.flaticon.com/512/483/483361.png') no-repeat center/contain;
-      position: absolute;
-      left: -120px;
-      top: 40%;
-    }
-
-    #nukeOverlay.explosion {
-      background: radial-gradient(circle, red, black);
-      animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse {
-      0% { background: radial-gradient(circle, red, black); }
-      50% { background: radial-gradient(circle, orange, black); }
-      100% { background: radial-gradient(circle, red, black); }
-    }
-
-    /* Shake effect */
-    .shake-screen {
-      animation: screenShake 0.5s infinite;
-    }
-    @keyframes screenShake {
-      0% { transform: translate(0,0); }
-      25% { transform: translate(-10px, 5px); }
-      50% { transform: translate(10px, -5px); }
-      75% { transform: translate(-5px, -10px); }
-      100% { transform: translate(5px, 10px); }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hacker Hangout</title>
+<style>
+  body { margin:0; font-family: monospace; background:black; color:#0f0; overflow-x:hidden; }
+  #matrixCanvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
+  #banner { text-align:center; font-size:2em; color:#0f0; padding:10px; z-index:2; position:relative; }
+  #chatContainer { position:relative; z-index:2; padding:10px; max-width:600px; margin:0 auto; }
+  #chat { height:400px; overflow-y:auto; background:#111; padding:10px; border-radius:10px; }
+  .msg { padding:5px; margin:3px 0; border-radius:5px; max-width:80%; word-wrap:break-word; }
+  .msg.me { background:#0f0; color:black; margin-left:auto; }
+  .msg.other { background:#222; color:#0f0; margin-right:auto; }
+  .msg.admin { background:#f00; color:#fff; font-weight:bold; }
+  #messageInput { width:80%; }
+  #sendBtn { width:18%; }
+  #admin-panel { display:none; margin-top:10px; }
+  #sahurCursor { position:fixed; width:40px; height:40px; pointer-events:none; z-index:9999; }
+  #gifMenu { margin-top:5px; }
+  button { margin:2px; }
+</style>
 </head>
 <body>
-  <canvas id="matrix"></canvas>
-  <header>💻 Hacker Hangout 💻</header>
 
-  <div id="chat-container"></div>
-
-  <div id="controls">
-    <input id="username" placeholder="Username">
-    <input id="message" placeholder="Message">
-    <button id="send">Send</button>
+<canvas id="matrixCanvas"></canvas>
+<div id="banner">🌐 Hacker Hangout 🌐</div>
+<div id="chatContainer">
+  <div id="chat"></div>
+  <input type="text" id="username" placeholder="Username">
+  <input type="text" id="messageInput" placeholder="Message">
+  <button id="sendBtn">Send</button>
+  <div id="gifMenu">
+    <input type="text" id="gifQuery" placeholder="Search GIFs">
+    <button id="gifSearchBtn">Send GIF</button>
   </div>
 
-  <div id="admin-login">
-    <input id="adminUser" placeholder="Admin username">
-    <input id="adminPass" type="password" placeholder="Admin password">
-    <button id="adminLoginBtn">Login</button>
+  <div id="adminLogin">
+    <input type="text" id="adminUser" placeholder="Admin Username">
+    <input type="password" id="adminPass" placeholder="Password">
+    <button id="adminLoginBtn">Login as Admin</button>
   </div>
 
-  <div id="admin-panel" style="display:none;">
-    <h3>Admin Panel</h3>
-    <input id="banUser" placeholder="Ban username">
+  <div id="admin-panel">
+    <input type="text" id="banUser" placeholder="Ban Username">
     <button id="banBtn">Ban</button>
-    <input id="unbanUser" placeholder="Unban username">
+    <input type="text" id="unbanUser" placeholder="Unban Username">
     <button id="unbanBtn">Unban</button>
-    <button id="nukeBtn">☢ Nuke Chat ☢</button>
-    <p>Banned Users: <span id="bannedList">(none)</span></p>
+    <button id="clearBtn">Clear Chat</button>
+    <button id="sahurModeBtn">Activate Sahur Mode</button>
+    <div>Banned Users: <span id="bannedList">(none)</span></div>
+    <button id="nukeBtn">Launch Nuke</button>
   </div>
+</div>
 
-  <!-- Nuke overlay -->
-  <div id="nukeOverlay">
-    <div id="nukeBomb"></div>
-  </div>
+<!-- Firebase Compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
 
-  <!-- Firebase compat SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
-  <script>
-    // Firebase config (replace with yours)
-    const firebaseConfig = {
-      apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
-      authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
-      databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
-      projectId: "hacker-hangout-gam3r999",
-      storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
-      messagingSenderId: "411445080851",
-      appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
-      measurementId: "G-X880BXHHRE"
-    };
-    firebase.initializeApp(firebaseConfig);
-    window.db = firebase.database();
-  </script>
-
-  <script src="chat.js"></script>
-  <script>
-    window.initChat(); // start chat
-  </script>
+<script src="chat.js"></script>
 </body>
 </html>

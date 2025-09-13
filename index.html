@@ -1,68 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Hacker Hangout — Local Chat</title>
-<style>
-  :root{--green:#0f0;--bright:#00ff00;--black:#000}
-  body{margin:0;height:100vh;background:var(--black);color:var(--green);font-family:monospace;display:flex;flex-direction:column;align-items:center;padding:1rem;box-sizing:border-box}
-  h1{margin:0 0 .6rem;font-size:2.2rem;animation:glitch 1s infinite}
-  @keyframes glitch{0%{text-shadow:2px 0 #f0f}20%{text-shadow:-2px -2px #0ff,2px 2px #f0f}40%{text-shadow:2px 2px #f0f,-2px -2px #0ff}60%{text-shadow:-2px 2px #0ff,2px -2px #f0}80%{text-shadow:2px -2px #f0,-2px 2px #0ff}100%{text-shadow:2px 0 #f0,-2px 0 #0ff}}
-  #chat{width:95%;max-width:900px;height:58vh;border:1px solid var(--green);padding:0.8rem;overflow:auto;background:rgba(0,0,0,0.85);border-radius:8px;display:flex;flex-direction:column;gap:0.4rem}
-  .msg{display:inline-block;padding:.4rem .6rem;border-radius:10px;max-width:80%;word-wrap:break-word}
-  .me{align-self:flex-end;background:var(--bright);color:#000;text-align:right}
-  .other{align-self:flex-start;background:var(--green);color:#000}
-  .admin{border:2px solid #f00;padding:.2rem}
-  .banned{background:#f00;color:#000;animation:flash 0.6s ease-in-out 3}
-  @keyframes flash{0%,100%{background:#f00;color:#000}50%{background:#000;color:#f00}}
-  #controls{width:95%;max-width:900px;display:flex;gap:.5rem;margin-top:.6rem}
-  input[type="text"], input[type="password"]{flex:1;padding:.6rem;border-radius:6px;border:1px solid var(--green);background:#000;color:var(--green)}
-  button{padding:.6rem 1rem;border-radius:6px;border:1px solid var(--green);background:#000;color:var(--green);cursor:pointer}
-  button:hover{background:var(--green);color:#000}
-  #admin-login{width:95%;max-width:900px;margin-top:.8rem;border-top:1px dashed rgba(0,255,0,0.15);padding-top:.8rem}
-  #admin-panel{margin-top:.6rem;background:rgba(0,0,0,0.65);padding:.6rem;border-radius:6px}
-  footer{margin-top:.6rem;color:var(--green);font-size:.85rem;text-align:center}
-  .small{font-size:.85rem;color:rgba(0,255,0,0.7)}
-  .notice{color:#ffb86b;margin-top:.4rem}
-</style>
+  <meta charset="UTF-8">
+  <title>Hacker Hangout</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; overflow:hidden; font-family:'Courier New', monospace; background:black; color:#0f0;}
+    canvas { position:fixed; top:0; left:0; z-index:-1; }
+    #chat { position:relative; z-index:1; height:400px; overflow-y:scroll; padding:10px; border:1px solid #0f0; margin:10px; background: rgba(0,0,0,0.8);}
+    .msg { margin-bottom:6px; }
+    .msg.me { color:#6ff; }
+    .msg.admin { font-weight:bold; }
+    .msg.banned { color:red; font-weight:bold; animation:flash 1s infinite; }
+    @keyframes flash { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0.3;} }
+    #inputBar { display:flex; margin:10px; }
+    #inputBar input { flex:1; margin-right:6px; padding:6px; background:black; color:#0f0; border:1px solid #0f0; }
+    #inputBar button { padding:6px 12px; background:black; color:#0f0; border:1px solid #0f0; cursor:pointer; }
+    #admin-panel { display:none; padding:10px; margin:10px; border:1px dashed #0f0; }
+    footer { margin:10px; text-align:center; font-size:0.9rem; color:#8bff8b; }
+  </style>
 </head>
 <body>
-  <h1>Hacker Hangout</h1>
 
-  <div id="chat" aria-live="polite"></div>
+  <canvas id="matrix"></canvas>
 
-  <div id="controls">
-    <input id="username" type="text" placeholder="Your hacker name (e.g. Neo)" />
-    <input id="message" type="text" placeholder="Type message and press Enter or Send" />
+  <h1 style="text-align:center; color:#0f0;">💻 Hacker Hangout</h1>
+
+  <div id="chat"></div>
+
+  <div id="inputBar">
+    <input id="username" type="text" placeholder="Username">
+    <input id="message" type="text" placeholder="Message">
     <button id="send">Send</button>
   </div>
 
-  <!-- Admin login -->
-  <div id="admin-login">
-    <div class="small">Admin Login (enter your admin username and password)</div>
-    <div style="display:flex;gap:.5rem;margin-top:.4rem">
-      <input id="adminUser" type="text" placeholder="Admin username" />
-      <input id="adminPass" type="password" placeholder="Admin password" />
-      <button id="adminLoginBtn">Login</button>
-    </div>
-
-    <div id="admin-panel" style="display:none;">
-      <h3 class="small">Admin Panel</h3>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <input id="banUser" type="text" placeholder="Username to ban" />
-        <button id="banBtn">Ban</button>
-        <input id="unbanUser" type="text" placeholder="Username to unban" />
-        <button id="unbanBtn">Unban</button>
-        <button id="clearBtn">Clear Chat</button>
-      </div>
-      <div class="notice">Admin actions sync across tabs automatically.</div>
-      <div style="margin-top:.6rem"><strong>Banned users:</strong> <span id="bannedList" class="small"></span></div>
-    </div>
+  <div id="admin-login" style="margin:10px;">
+    <input id="adminUser" type="text" placeholder="Admin Username">
+    <input id="adminPass" type="password" placeholder="Admin Password">
+    <button id="adminLoginBtn">Login as Admin</button>
   </div>
 
-  <footer>&copy; 2025 Gam3r999 — Local-only chat (no server)</footer>
+  <div id="admin-panel">
+    <h3>Admin Panel</h3>
+    <div>
+      <input id="banUser" type="text" placeholder="Username to ban">
+      <button id="banBtn">Ban</button>
+    </div>
+    <div>
+      <input id="unbanUser" type="text" placeholder="Username to unban">
+      <button id="unbanBtn">Unban</button>
+    </div>
+    <div>
+      <button id="clearBtn">Clear Chat</button>
+    </div>
+    <p>Banned Users: <span id="bannedList">(none)</span></p>
+  </div>
 
+  <footer>
+    &copy; 2025 Gam3r999. All rights reserved.<br>
+    <small>⚠️ WARNING: Client-side admin is NOT secure. Abuse is expected. Enter at your own risk.</small>
+  </footer>
+
+  <!-- Firebase snippet -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
+      authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
+      databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
+      projectId: "hacker-hangout-gam3r999",
+      storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
+      messagingSenderId: "411445080851",
+      appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
+      measurementId: "G-X880BXHHRE"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const analytics = getAnalytics(app);
+
+    window.CloudDB = { db, ref, push, set, onValue, remove };
+  </script>
+
+  <!-- Matrix background -->
+  <script>
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+    const fontSize = 16;
+    const columns = Math.floor(w / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function draw() {
+      ctx.fillStyle = "rgba(0,0,0,0.05)";
+      ctx.fillRect(0,0,w,h);
+      ctx.fillStyle = "#0f0";
+      ctx.font = fontSize + "px monospace";
+      for(let i=0; i<drops.length; i++){
+        const text = letters[Math.floor(Math.random()*letters.length)];
+        ctx.fillText(text,i*fontSize,drops[i]*fontSize);
+        drops[i]++;
+        if(drops[i]*fontSize>h && Math.random()>0.975) drops[i]=0;
+      }
+    }
+    setInterval(draw,33);
+    window.addEventListener('resize',()=>{
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    });
+  </script>
+
+  <!-- Chat script with device alt detection -->
   <script src="chat.js"></script>
+
 </body>
 </html>

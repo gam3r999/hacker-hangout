@@ -5,75 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hacker Hangout</title>
 <style>
-  body {
-    margin:0;
-    font-family:'Courier New', monospace;
-    background:black;
-    color:#0f0;
-    overflow:hidden;
-  }
-  canvas#matrix {
-    position: fixed;
-    top:0;
-    left:0;
-    z-index:-1;
-  }
-
-  #chat-container {
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    max-width:600px;
-    margin:auto;
-    padding:10px;
-    box-sizing:border-box;
-    background:rgba(0,0,0,0.7);
-    overflow:hidden;
-  }
-
-  h1#banner {
-    text-align:center;
-    color:#0f0;
-    font-size:2rem;
-    margin-bottom:10px;
-    text-shadow:0 0 5px #0f0,0 0 10px #0f0;
-  }
-
-  #chat {
-    flex:1;
-    overflow-y:auto;
-    padding:5px;
-    display:flex;
-    flex-direction:column;
-  }
-
-  .msg {
-    padding:5px 10px;
-    margin:5px 0;
-    border-radius:5px;
-    display:inline-block;
-    max-width:80%;
-    word-wrap:break-word;
-    animation: glitch 0.2s infinite;
-  }
-  .msg.me { background:rgba(0,255,0,0.2); align-self:flex-end; color:#0f0; }
-  .msg.other { background:rgba(0,255,255,0.2); align-self:flex-start; color:#0ff; }
-  .msg.admin { background:rgba(255,0,0,0.3); color:#f00; font-weight:bold; }
-  .msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
-
-  @keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
-  @keyframes glitch {
-    0%{text-shadow:1px 0 #0ff,-1px 0 #0ff;}20%{text-shadow:1px 0 #0f0,-1px 0 #0f0;}
-    40%{text-shadow:-1px 0 #0ff,1px 0 #0ff;}60%{text-shadow:-1px 0 #0f0,1px 0 #0f0;}
-    80%{text-shadow:1px 0 #0ff,-1px 0 #0ff;}100%{text-shadow:1px 0 #0f0,-1px 0 #0f0;}
-  }
-
-  #input-container { display:flex; margin-top:5px; }
-  #username,#message { flex:1; padding:5px; font-family: monospace; }
-  #send { padding:5px; }
-
-  #admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
-  #admin-panel input { margin:2px; padding:2px; }
+body {
+  margin:0;
+  font-family:'Courier New', monospace;
+  background:black;
+  color:#0f0;
+  overflow:hidden;
+}
+canvas#matrix {
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
+}
+#chat-container {
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  max-width:600px;
+  margin:auto;
+  padding:10px;
+  box-sizing:border-box;
+  background:rgba(0,0,0,0.7);
+  overflow:hidden;
+}
+h1#banner {
+  text-align:center;
+  color:#0f0;
+  font-size:2rem;
+  margin-bottom:10px;
+  text-shadow:0 0 5px #0f0,0 0 10px #0f0;
+}
+#chat {
+  flex:1;
+  overflow-y:auto;
+  padding:5px;
+  display:flex;
+  flex-direction:column;
+}
+.msg {
+  padding:5px 10px;
+  margin:5px 0;
+  border-radius:5px;
+  display:inline-block;
+  max-width:80%;
+  word-wrap:break-word;
+}
+.msg.me { background:rgba(0,255,0,0.2); align-self:flex-end; color:#0f0; }
+.msg.other { background:rgba(0,255,255,0.2); align-self:flex-start; color:#0ff; }
+.msg.admin { background:rgba(255,0,0,0.3); color:#f00; font-weight:bold; }
+.msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
+@keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
+#input-container { display:flex; margin-top:5px; }
+#username,#message { flex:1; padding:5px; font-family: monospace; }
+#send { padding:5px; }
+#admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
+#admin-panel input { margin:2px; padding:2px; }
 </style>
 </head>
 <body>
@@ -105,22 +92,37 @@
   <div>Banned users: <span id="bannedList">(none)</span></div>
 </div>
 
-<!-- FIREBASE COMPAT SDK -->
+<!-- Firebase Compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
 
-<!-- CHAT JS -->
+<!-- Initialize Firebase -->
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
+  authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
+  databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
+  projectId: "hacker-hangout-gam3r999",
+  storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
+  messagingSenderId: "411445080851",
+  appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
+  measurementId: "G-X880BXHHRE"
+};
+firebase.initializeApp(firebaseConfig);
+</script>
+
+<!-- Chat JS -->
 <script src="chat.js"></script>
 
-<!-- MATRIX EFFECT -->
+<!-- Matrix Background -->
 <script>
-const canvas = document.getElementById('matrix');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+const canvas=document.getElementById('matrix');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
 const letters='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%';
 const fontSize=16;
-const columns=canvas.width/fontSize;
+const columns=Math.floor(canvas.width/fontSize);
 const drops=[];
 for(let x=0;x<columns;x++) drops[x]=1;
 function draw(){

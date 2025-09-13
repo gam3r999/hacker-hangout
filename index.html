@@ -1,106 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hacker Hangout</title>
-<style>
-  html,body{margin:0;padding:0;height:100%;background:black;color:#00ff00;font-family:monospace;overflow:hidden;}
-  #matrix-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;}
-  #banner{text-align:center;font-size:2em;padding:10px;color:#0f0;text-shadow:0 0 5px #0f0,0 0 10px #0f0;}
-  #chat-container{position:absolute;top:60px;bottom:0;width:100%;display:flex;flex-direction:column;padding:10px;box-sizing:border-box;}
-  #chat{flex:1;overflow-y:auto;margin-bottom:10px;}
-  .msg{padding:5px 10px;margin:5px;border-radius:5px;max-width:60%;word-wrap:break-word;}
-  .me{background:#004400;color:#0f0;margin-left:auto;}
-  .other{background:#002200;color:#0f0;margin-right:auto;}
-  .admin{border:1px solid #0ff;}
-  .banned{background:#440000;color:#f00;animation:flash 0.5s alternate infinite;}
-  @keyframes flash{from{opacity:1;}to{opacity:0.2;}}
-  #input-container{display:flex;flex-wrap:wrap;}
-  #input-container input{flex:1;margin:2px;padding:5px;background:black;color:#0f0;border:1px solid #0f0;border-radius:3px;}
-  #input-container button{margin:2px;padding:5px;background:#0f0;color:black;border:none;border-radius:3px;cursor:pointer;}
-  #gifResults img{border:1px solid #0f0;}
-  #admin-panel{display:none;padding:10px;background:#111;border:1px solid #0f0;margin-top:10px;}
-</style>
+  <meta charset="UTF-8">
+  <title>Hacker Hangout</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      background: black;
+      color: #0f0;
+      overflow: hidden;
+    }
+
+    /* Matrix canvas */
+    #matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      width: 100%;
+      height: 100%;
+    }
+
+    header {
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      color: lime;
+      padding: 10px;
+      font-size: 24px;
+      border-bottom: 2px solid #0f0;
+    }
+
+    #chat-container {
+      height: 60vh;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .msg {
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 6px;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    .me { background: #003300; color: #0f0; margin-left: auto; }
+    .other { background: #111; color: #0f0; margin-right: auto; }
+    .admin { border: 2px solid red; }
+
+    .banned { background: #330000; color: red; animation: flash 1s infinite; }
+    @keyframes flash {
+      0%, 100% { background: #330000; }
+      50% { background: #660000; }
+    }
+
+    #controls, #admin-panel {
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      border-top: 2px solid #0f0;
+    }
+
+    input, button {
+      font-family: inherit;
+      margin: 3px;
+      padding: 5px;
+    }
+
+    /* Nuke overlay */
+    #nukeOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    #nukeBomb {
+      width: 100px;
+      height: 100px;
+      background: url('https://cdn-icons-png.flaticon.com/512/483/483361.png') no-repeat center/contain;
+      position: absolute;
+      left: -120px;
+      top: 40%;
+    }
+
+    #nukeOverlay.explosion {
+      background: radial-gradient(circle, red, black);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { background: radial-gradient(circle, red, black); }
+      50% { background: radial-gradient(circle, orange, black); }
+      100% { background: radial-gradient(circle, red, black); }
+    }
+
+    /* Shake effect */
+    .shake-screen {
+      animation: screenShake 0.5s infinite;
+    }
+    @keyframes screenShake {
+      0% { transform: translate(0,0); }
+      25% { transform: translate(-10px, 5px); }
+      50% { transform: translate(10px, -5px); }
+      75% { transform: translate(-5px, -10px); }
+      100% { transform: translate(5px, 10px); }
+    }
+  </style>
 </head>
 <body>
+  <canvas id="matrix"></canvas>
+  <header>💻 Hacker Hangout 💻</header>
 
-<canvas id="matrix-canvas"></canvas>
+  <div id="chat-container"></div>
 
-<div id="banner">HACKER HANGOUT</div>
-
-<div id="chat-container">
-  <div id="chat"></div>
-  <div id="input-container">
+  <div id="controls">
     <input id="username" placeholder="Username">
     <input id="message" placeholder="Message">
     <button id="send">Send</button>
-    <input id="gifSearch" placeholder="Search GIFs">
-    <button id="gifBtn">Search GIF</button>
-    <div id="gifResults" style="display:flex;flex-wrap:wrap;max-height:200px;overflow-y:auto;"></div>
   </div>
 
-  <div id="admin-panel">
+  <div id="admin-login">
+    <input id="adminUser" placeholder="Admin username">
+    <input id="adminPass" type="password" placeholder="Admin password">
+    <button id="adminLoginBtn">Login</button>
+  </div>
+
+  <div id="admin-panel" style="display:none;">
     <h3>Admin Panel</h3>
-    <input id="banUser" placeholder="Ban Username">
+    <input id="banUser" placeholder="Ban username">
     <button id="banBtn">Ban</button>
-    <input id="unbanUser" placeholder="Unban Username">
+    <input id="unbanUser" placeholder="Unban username">
     <button id="unbanBtn">Unban</button>
-    <button id="clearBtn">Clear Chat</button>
-    <div>Banned Users: <span id="bannedList"></span></div>
+    <button id="nukeBtn">☢ Nuke Chat ☢</button>
+    <p>Banned Users: <span id="bannedList">(none)</span></p>
   </div>
 
-  <div>
-    <input id="adminUser" placeholder="Admin Username">
-    <input id="adminPass" placeholder="Admin Password" type="password">
-    <button id="adminLoginBtn">Login as Admin</button>
+  <!-- Nuke overlay -->
+  <div id="nukeOverlay">
+    <div id="nukeBomb"></div>
   </div>
-</div>
 
-<!-- Firebase Compat SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Firebase compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-<script>
-  // Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
-    authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
-    databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
-    projectId: "hacker-hangout-gam3r999",
-    storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
-    messagingSenderId: "411445080851",
-    appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
-    measurementId: "G-X880BXHHRE"
-  };
-  firebase.initializeApp(firebaseConfig);
-</script>
+  <script>
+    // Firebase config (replace with yours)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
+      authDomain: "hacker-hangout-gam3r999.firebaseapp.com",
+      databaseURL: "https://hacker-hangout-gam3r999-default-rtdb.firebaseio.com",
+      projectId: "hacker-hangout-gam3r999",
+      storageBucket: "hacker-hangout-gam3r999.firebasestorage.app",
+      messagingSenderId: "411445080851",
+      appId: "1:411445080851:web:f0c3b87f8f6ec4cf4ea0e6",
+      measurementId: "G-X880BXHHRE"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window.db = firebase.database();
+  </script>
 
-<script src="chat.js"></script>
-
-<script>
-  // Matrix effect
-  const canvas=document.getElementById("matrix-canvas");
-  const ctx=canvas.getContext("2d");
-  let width=canvas.width=window.innerWidth;
-  let height=canvas.height=window.innerHeight;
-  const cols=Math.floor(width/20);
-  const ypos=new Array(cols).fill(0);
-  function matrix(){
-    ctx.fillStyle="rgba(0,0,0,0.1)";
-    ctx.fillRect(0,0,width,height);
-    ctx.fillStyle="#0f0";
-    ctx.font="15pt monospace";
-    for(let i=0;i<cols;i++){
-      const x=i*20;
-      ctx.fillText(Math.random()>.5?"1":"0",x,ypos[i]*20);
-      if(ypos[i]*20>height&&Math.random()>0.975) ypos[i]=0;
-      ypos[i]++;
-    }
-  }
-  setInterval(matrix,50);
-  window.addEventListener('resize',()=>{ width=canvas.width=window.innerWidth;height=canvas.height=window.innerHeight; });
-</script>
-
+  <script src="chat.js"></script>
+  <script>
+    window.initChat(); // start chat
+  </script>
 </body>
 </html>

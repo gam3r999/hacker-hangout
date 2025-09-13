@@ -5,59 +5,98 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hacker Hangout</title>
 <style>
-  body { margin:0; font-family: monospace; background:black; color:#0f0; overflow-x:hidden; }
-  #matrixCanvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; }
-  #banner { text-align:center; font-size:2em; color:#0f0; padding:10px; z-index:2; position:relative; }
-  #chatContainer { position:relative; z-index:2; padding:10px; max-width:600px; margin:0 auto; }
-  #chat { height:400px; overflow-y:auto; background:#111; padding:10px; border-radius:10px; }
-  .msg { padding:5px; margin:3px 0; border-radius:5px; max-width:80%; word-wrap:break-word; }
-  .msg.me { background:#0f0; color:black; margin-left:auto; }
-  .msg.other { background:#222; color:#0f0; margin-right:auto; }
-  .msg.admin { background:#f00; color:#fff; font-weight:bold; }
-  #messageInput { width:80%; }
-  #sendBtn { width:18%; }
-  #admin-panel { display:none; margin-top:10px; }
-  #sahurCursor { position:fixed; width:40px; height:40px; pointer-events:none; z-index:9999; }
-  #gifMenu { margin-top:5px; }
-  button { margin:2px; }
+  body {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    background-color: black;
+    color: #0f0;
+    cursor: url('https://i.imgur.com/nHg0JSz.png'), auto; /* hacker cursor */
+    overflow-x: hidden;
+  }
+  #matrix {
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    z-index:0;
+    pointer-events:none;
+  }
+  #banner {
+    text-align:center;
+    font-size:2em;
+    padding:10px;
+    background: rgba(0,0,0,0.8);
+    color:#0f0;
+    z-index:5;
+    position: relative;
+  }
+  #chatContainer {
+    position: relative;
+    z-index: 1;
+    max-width:800px;
+    margin:0 auto;
+    padding:10px;
+  }
+  #chat {
+    height:400px;
+    overflow-y:auto;
+    border:1px solid #0f0;
+    padding:5px;
+    margin-bottom:10px;
+    background:rgba(0,0,0,0.7);
+  }
+  .msg {
+    padding:3px 5px;
+    margin:2px 0;
+    border-radius:5px;
+    max-width:70%;
+    word-wrap: break-word;
+  }
+  .msg.me { background: #006400; color:#0f0; margin-left:auto;}
+  .msg.other { background: #004d00; color:#0f0; margin-right:auto;}
+  .msg.admin { border:1px dashed #0f0;}
+  .msg.banned { background:#f00;color:#fff;}
+  input, button { padding:5px; margin:2px; background:black; color:#0f0; border:1px solid #0f0;}
+  #admin-panel { display:none; border:1px solid #0f0; padding:5px; margin:5px 0;}
 </style>
 </head>
 <body>
-
-<canvas id="matrixCanvas"></canvas>
-<div id="banner">🌐 Hacker Hangout 🌐</div>
+<canvas id="matrix"></canvas>
+<div id="banner">Hacker Hangout</div>
 <div id="chatContainer">
   <div id="chat"></div>
-  <input type="text" id="username" placeholder="Username">
-  <input type="text" id="messageInput" placeholder="Message">
-  <button id="sendBtn">Send</button>
-  <div id="gifMenu">
-    <input type="text" id="gifQuery" placeholder="Search GIFs">
-    <button id="gifSearchBtn">Send GIF</button>
-  </div>
+  <input id="username" placeholder="Username">
+  <input id="message" placeholder="Message">
+  <button id="send">Send</button>
 
-  <div id="adminLogin">
-    <input type="text" id="adminUser" placeholder="Admin Username">
-    <input type="password" id="adminPass" placeholder="Password">
-    <button id="adminLoginBtn">Login as Admin</button>
+  <div id="admin-login">
+    <input id="adminUser" placeholder="Admin username">
+    <input id="adminPass" placeholder="Admin password" type="password">
+    <button id="adminLoginBtn">Login</button>
   </div>
 
   <div id="admin-panel">
-    <input type="text" id="banUser" placeholder="Ban Username">
+    <input id="banUser" placeholder="Ban username">
     <button id="banBtn">Ban</button>
-    <input type="text" id="unbanUser" placeholder="Unban Username">
+    <input id="unbanUser" placeholder="Unban username">
     <button id="unbanBtn">Unban</button>
-    <button id="clearBtn">Clear Chat</button>
-    <button id="sahurModeBtn">Activate Sahur Mode</button>
-    <div>Banned Users: <span id="bannedList">(none)</span></div>
-    <button id="nukeBtn">Launch Nuke</button>
+    <button id="clearBtn">Clear chat</button>
+    <button id="nukeBtn">NUKE!</button>
+    <div>Banned Users: <span id="bannedList"></span></div>
   </div>
 </div>
 
 <!-- Firebase Compat SDK -->
-<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <script src="chat.js"></script>
+<script>
+// Matrix background
+const canvas=document.getElementById('matrix'); const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+const letters='01'; const fontSize=16; const columns=canvas.width/fontSize;
+const drops=[]; for(let x=0;x<columns;x++) drops[x]=Math.random()*canvas.height;
+function drawMatrix(){ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle='#0f0';ctx.font=fontSize+'px monospace';for(let i=0;i<drops.length;i++){ctx.fillText(letters.charAt(Math.floor(Math.random()*letters.length)),i*fontSize,drops[i]);drops[i]+=fontSize;if(drops[i]>canvas.height && Math.random()>0.975)drops[i]=0;}}setInterval(drawMatrix,50);
+</script>
 </body>
 </html>

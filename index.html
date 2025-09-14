@@ -5,20 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hacker Hangout</title>
 <style>
-body { margin:0; font-family:'Courier New', monospace; background:black; color:#0f0; overflow:hidden; cursor:url('https://i.imgur.com/nHg0JSz.png'), auto; }
-canvas#matrix { position:fixed; top:0; left:0; z-index:-1; }
-#chat-container { display:flex; flex-direction:column; height:100vh; max-width:600px; margin:auto; padding:10px; box-sizing:border-box; background:rgba(0,0,0,0.7); overflow:hidden; }
-h1#banner { text-align:center; color:#0f0; font-size:2rem; margin-bottom:10px; text-shadow:0 0 5px #0f0,0 0 10px #0f0; }
-#chat { flex:1; overflow-y:auto; padding:5px; display:flex; flex-direction:column; }
-.msg { padding:5px 10px; margin:5px 0; border-radius:5px; display:inline-block; max-width:80%; word-wrap:break-word; }
+body {
+  margin:0;
+  font-family:'Courier New', monospace;
+  background:black;
+  color:#0f0;
+  overflow:hidden;
+  cursor: url('https://i.imgur.com/nHg0JSz.png'), auto;
+}
+canvas#matrix {
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
+}
+#chat-container {
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  max-width:700px;
+  margin:auto;
+  padding:10px;
+  box-sizing:border-box;
+  background:rgba(0,0,0,0.7);
+  overflow:hidden;
+}
+h1#banner {
+  text-align:center;
+  color:#0f0;
+  font-size:2rem;
+  margin-bottom:10px;
+  text-shadow:0 0 5px #0f0,0 0 10px #0f0;
+}
+#chat {
+  flex:1;
+  overflow-y:auto;
+  padding:5px;
+  display:flex;
+  flex-direction:column;
+}
+.msg {
+  padding:5px 10px;
+  margin:5px 0;
+  border-radius:5px;
+  display:inline-block;
+  max-width:80%;
+  word-wrap:break-word;
+}
 .msg.me { background:rgba(0,255,0,0.2); align-self:flex-end; color:#0f0; }
 .msg.other { background:rgba(0,255,255,0.2); align-self:flex-start; color:#0ff; }
 .msg.admin { background:rgba(255,0,0,0.3); color:#f00; font-weight:bold; }
 .msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
 @keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
-#input-container { display:flex; flex-wrap:wrap; margin-top:5px; }
-#username,#message,#fileInput { flex:1; padding:5px; font-family: monospace; margin-bottom:5px; }
-#send,#sendFileBtn { padding:5px; margin-left:2px; }
+#input-container { display:flex; margin-top:5px; flex-wrap:wrap; }
+#username,#message,#fileInput { flex:1; padding:5px; font-family: monospace; margin:2px; }
+#send,#sendFileBtn { padding:5px; margin:2px; }
 #admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
 #admin-panel input { margin:2px; padding:2px; }
 </style>
@@ -33,8 +74,8 @@ h1#banner { text-align:center; color:#0f0; font-size:2rem; margin-bottom:10px; t
   <div id="input-container">
     <input id="username" placeholder="Your username">
     <input id="message" placeholder="Your message">
-    <button id="send">Send</button>
     <input type="file" id="fileInput">
+    <button id="send">Send</button>
     <button id="sendFileBtn">Send File</button>
   </div>
 
@@ -45,6 +86,7 @@ h1#banner { text-align:center; color:#0f0; font-size:2rem; margin-bottom:10px; t
     <input id="unbanUser" placeholder="Username to unban">
     <button id="unbanBtn">Unban</button>
     <button id="clearBtn">Clear Chat</button>
+    <button id="nukeBtn">NUKE!</button>
   </div>
 
   <input id="adminUser" placeholder="Admin username">
@@ -59,7 +101,7 @@ h1#banner { text-align:center; color:#0f0; font-size:2rem; margin-bottom:10px; t
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-storage-compat.js"></script>
 
-<!-- Initialize Firebase -->
+<!-- Firebase Initialize -->
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
@@ -74,19 +116,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 </script>
 
-<!-- Chat JS -->
 <script src="chat.js"></script>
 
 <!-- Matrix Background -->
 <script>
 const canvas=document.getElementById('matrix');
 const ctx=canvas.getContext('2d');
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+function resizeCanvas(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+resizeCanvas();
+window.addEventListener('resize',resizeCanvas);
 const letters='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%';
 const fontSize=16;
-const columns=Math.floor(canvas.width/fontSize);
-const drops=[];
+let columns=Math.floor(canvas.width/fontSize);
+let drops=[];
 for(let x=0;x<columns;x++) drops[x]=1;
 function draw(){
   ctx.fillStyle='rgba(0,0,0,0.05)';
@@ -101,7 +143,6 @@ function draw(){
   }
 }
 setInterval(draw,33);
-window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 </script>
 
 </body>

@@ -23,7 +23,7 @@ canvas#matrix {
   display:flex;
   flex-direction:column;
   height:100vh;
-  max-width:700px;
+  max-width:600px;
   margin:auto;
   padding:10px;
   box-sizing:border-box;
@@ -58,10 +58,12 @@ h1#banner {
 .msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
 @keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
 #input-container { display:flex; margin-top:5px; flex-wrap:wrap; }
-#username,#message,#fileInput { flex:1; padding:5px; font-family: monospace; margin:2px; }
-#send,#sendFileBtn { padding:5px; margin:2px; }
+#username,#message { flex:1; padding:5px; font-family: monospace; margin:2px; }
+#fileInput { margin:2px; }
+#send { padding:5px; margin:2px; }
 #admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
 #admin-panel input { margin:2px; padding:2px; }
+#nukeBtn { margin-top:5px; padding:5px; }
 </style>
 </head>
 <body>
@@ -74,9 +76,8 @@ h1#banner {
   <div id="input-container">
     <input id="username" placeholder="Your username">
     <input id="message" placeholder="Your message">
-    <input type="file" id="fileInput">
+    <input id="fileInput" type="file" multiple>
     <button id="send">Send</button>
-    <button id="sendFileBtn">Send File</button>
   </div>
 
   <div id="admin-panel">
@@ -86,7 +87,7 @@ h1#banner {
     <input id="unbanUser" placeholder="Username to unban">
     <button id="unbanBtn">Unban</button>
     <button id="clearBtn">Clear Chat</button>
-    <button id="nukeBtn">NUKE!</button>
+    <button id="nukeBtn">NUKE</button>
   </div>
 
   <input id="adminUser" placeholder="Admin username">
@@ -99,9 +100,8 @@ h1#banner {
 <!-- Firebase Compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-storage-compat.js"></script>
 
-<!-- Firebase Initialize -->
+<!-- Initialize Firebase -->
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
@@ -116,19 +116,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 </script>
 
+<!-- Chat JS -->
 <script src="chat.js"></script>
 
 <!-- Matrix Background -->
 <script>
 const canvas=document.getElementById('matrix');
 const ctx=canvas.getContext('2d');
-function resizeCanvas(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
-resizeCanvas();
-window.addEventListener('resize',resizeCanvas);
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
 const letters='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%';
 const fontSize=16;
-let columns=Math.floor(canvas.width/fontSize);
-let drops=[];
+const columns=Math.floor(canvas.width/fontSize);
+const drops=[];
 for(let x=0;x<columns;x++) drops[x]=1;
 function draw(){
   ctx.fillStyle='rgba(0,0,0,0.05)';
@@ -143,6 +143,7 @@ function draw(){
   }
 }
 setInterval(draw,33);
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 </script>
 
 </body>

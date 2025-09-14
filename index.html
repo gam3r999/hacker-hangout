@@ -11,7 +11,6 @@ body {
   background:black;
   color:#0f0;
   overflow:hidden;
-  cursor: url('https://i.imgur.com/nHg0JSz.png'), auto;
 }
 canvas#matrix {
   position:fixed;
@@ -57,13 +56,11 @@ h1#banner {
 .msg.admin { background:rgba(255,0,0,0.3); color:#f00; font-weight:bold; }
 .msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
 @keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
-#input-container { display:flex; margin-top:5px; flex-wrap:wrap; }
-#username,#message { flex:1; padding:5px; font-family: monospace; margin:2px; }
-#fileInput { margin:2px; }
-#send { padding:5px; margin:2px; }
+#input-container { display:flex; margin-top:5px; }
+#username,#message { flex:1; padding:5px; font-family: monospace; }
+#send { padding:5px; }
 #admin-panel { display:none; background:rgba(255,0,0,0.3); padding:10px; margin-top:5px; }
 #admin-panel input { margin:2px; padding:2px; }
-#nukeBtn { margin-top:5px; padding:5px; }
 </style>
 </head>
 <body>
@@ -76,7 +73,6 @@ h1#banner {
   <div id="input-container">
     <input id="username" placeholder="Your username">
     <input id="message" placeholder="Your message">
-    <input id="fileInput" type="file" multiple>
     <button id="send">Send</button>
   </div>
 
@@ -87,7 +83,6 @@ h1#banner {
     <input id="unbanUser" placeholder="Username to unban">
     <button id="unbanBtn">Unban</button>
     <button id="clearBtn">Clear Chat</button>
-    <button id="nukeBtn">NUKE</button>
   </div>
 
   <input id="adminUser" placeholder="Admin username">

@@ -64,15 +64,89 @@ h1#banner {
 #admin-panel h3 { margin-top:0; color:#f00; }
 #admin-panel input, #admin-panel button { margin:2px; padding:5px; font-family: monospace; }
 #admin-panel button { background:#f00; color:#fff; border:none; cursor:pointer; }
+#wtfBtn { background:#ff0; color:#000; font-weight:bold; font-size:16px; padding:10px; margin-top:10px; width:100%; }
+#rickrollBtn { background:#ff1493; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; }
 #admin-login { margin-top:10px; padding:10px; background:rgba(0,255,0,0.1); border-radius:5px; }
 #admin-login input { margin:2px; padding:5px; background:#000; color:#0f0; border:1px solid #0f0; font-family: monospace; }
 #adminLoginBtn { padding:5px 10px; background:#0f0; color:#000; border:none; cursor:pointer; font-family: monospace; font-weight:bold; margin-left:5px; }
 #bannedList { color:#f00; }
+
+/* WTF Mode styles */
+.shake {
+  animation: shake 0.5s infinite;
+}
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-10px, -10px) rotate(-2deg); }
+  20% { transform: translate(10px, 10px) rotate(2deg); }
+  30% { transform: translate(-10px, 10px) rotate(-1deg); }
+  40% { transform: translate(10px, -10px) rotate(1deg); }
+  50% { transform: translate(-10px, -10px) rotate(-2deg); }
+  60% { transform: translate(10px, 10px) rotate(2deg); }
+  70% { transform: translate(-10px, 10px) rotate(-1deg); }
+  80% { transform: translate(10px, -10px) rotate(1deg); }
+  90% { transform: translate(-10px, -10px) rotate(-2deg); }
+}
+
+#nukeOverlay {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  background:rgba(0,0,0,0.8);
+  display:none;
+  z-index:9999;
+  justify-content:center;
+  align-items:center;
+}
+#nukeOverlay.active {
+  display:flex;
+}
+#nukeGif {
+  max-width:80%;
+  max-height:80%;
+  border:5px solid #f00;
+  box-shadow:0 0 50px #f00;
+}
+
+/* Rickroll overlay */
+#rickrollOverlay {
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  background:rgba(0,0,0,0.9);
+  display:none;
+  z-index:9999;
+  justify-content:center;
+  align-items:center;
+}
+#rickrollOverlay.active {
+  display:flex;
+}
+#rickrollGif {
+  max-width:90%;
+  max-height:90%;
+  border:5px solid #ff1493;
+  box-shadow:0 0 50px #ff1493;
+}
 </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
+
+<!-- Nuke Overlay -->
+<div id="nukeOverlay">
+  <img id="nukeGif" src="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif" alt="NUKE">
+</div>
+
+<!-- Rickroll Overlay -->
+<div id="rickrollOverlay">
+  <img id="rickrollGif" src="https://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif" alt="RICKROLL">
+</div>
 
 <div id="chat-container">
   <h1 id="banner">Hacker Hangout</h1>
@@ -90,6 +164,8 @@ h1#banner {
     <input id="unbanUser" placeholder="Username to unban">
     <button id="unbanBtn">Unban</button>
     <button id="clearBtn">Clear Chat</button>
+    <button id="wtfBtn">🚨 WTF MODE 🚨</button>
+    <button id="rickrollBtn">🎵 RICKROLL MODE 🎵</button>
   </div>
 
   <div id="admin-login">
@@ -138,6 +214,11 @@ firebase.initializeApp(firebaseConfig);
   const unbanBtn=document.getElementById('unbanBtn');
   const clearBtn=document.getElementById('clearBtn');
   const bannedListEl=document.getElementById('bannedList');
+  const wtfBtn=document.getElementById('wtfBtn');
+  const rickrollBtn=document.getElementById('rickrollBtn');
+  const nukeOverlay=document.getElementById('nukeOverlay');
+  const rickrollOverlay=document.getElementById('rickrollOverlay');
+  const chatContainer=document.getElementById('chat-container');
 
   const DEFAULT_ADMINS={ "adminsonlylol":"thisadminwilleventuallybeabused" };
   let admins={...DEFAULT_ADMINS};
@@ -154,6 +235,8 @@ firebase.initializeApp(firebaseConfig);
   const messagesRef=db.ref('messages');
   const bannedRef=db.ref('banned');
   const devicesRef=db.ref('devices');
+  const wtfModeRef=db.ref('wtfMode');
+  const rickrollModeRef=db.ref('rickrollMode');
 
   function escapeHtml(str){ 
     return String(str).replace(/[&<>"']/g,s=>({
@@ -242,12 +325,59 @@ firebase.initializeApp(firebaseConfig);
     messagesRef.remove(); 
   }
 
+  // WTF MODE FUNCTION
+  function activateWTFMode(){
+    wtfModeRef.set({ active: true, timestamp: Date.now() });
+  }
+
+  function triggerWTFEffect(){
+    chatContainer.classList.add('shake');
+    nukeOverlay.classList.add('active');
+    
+    const audio = new Audio('https://www.myinstants.com/media/sounds/wtf_boom.mp3');
+    audio.volume = 0.7;
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
+    setTimeout(() => {
+      chatContainer.classList.remove('shake');
+      nukeOverlay.classList.remove('active');
+      wtfModeRef.set({ active: false, timestamp: Date.now() });
+    }, 5000);
+  }
+
+  // RICKROLL MODE FUNCTION
+  function activateRickrollMode(){
+    rickrollModeRef.set({ active: true, timestamp: Date.now() });
+  }
+
+  function triggerRickrollEffect(){
+    // Play audio IMMEDIATELY (no delay)
+    const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl1MS2VryLfkKWL8RPOy2m-1W6yjbN-I2pg_cnoHs_AmgI.mp3');
+    audio.volume = 0.8;
+    audio.play().catch(e => console.log('Audio play failed:', e));
+    
+    // Wait 15 seconds before showing visual effects
+    setTimeout(() => {
+      chatContainer.classList.add('shake');
+      rickrollOverlay.classList.add('active');
+      
+      // Stop visual effects after 10 more seconds
+      setTimeout(() => {
+        chatContainer.classList.remove('shake');
+        rickrollOverlay.classList.remove('active');
+        rickrollModeRef.set({ active: false, timestamp: Date.now() });
+      }, 10000);
+    }, 15000); // 15 second delay for visuals
+  }
+
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
   adminLoginBtn.addEventListener('click',loginAdmin);
   banBtn.addEventListener('click',banUser);
   unbanBtn.addEventListener('click',unbanUser);
   clearBtn.addEventListener('click',clearChat);
+  wtfBtn.addEventListener('click',activateWTFMode);
+  rickrollBtn.addEventListener('click',activateRickrollMode);
 
   // Listen for messages
   messagesRef.on('value',snapshot=>{
@@ -262,6 +392,22 @@ firebase.initializeApp(firebaseConfig);
     bannedUsers={}; 
     snapshot.forEach(child=>{bannedUsers[child.key]=true;});
     updateBannedListUI();
+  });
+
+  // Listen for WTF Mode activation
+  wtfModeRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if(data && data.active) {
+      triggerWTFEffect();
+    }
+  });
+
+  // Listen for Rickroll Mode activation
+  rickrollModeRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if(data && data.active) {
+      triggerRickrollEffect();
+    }
   });
 
   // Auto-show admin if logged in

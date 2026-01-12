@@ -87,15 +87,32 @@ html.shake {
   90% { transform: translate(-15px, -15px) rotate(-3deg); }
 }
 
-#nukeOverlay {
+/* FAKE FULLSCREEN OVERLAY - covers everything */
+#fakeFullscreen {
   position:fixed;
   top:0;
   left:0;
   width:100vw;
   height:100vh;
+  background:rgba(0,0,0,0.98);
+  display:none;
+  z-index:999999;
+  justify-content:center;
+  align-items:center;
+}
+#fakeFullscreen.active {
+  display:flex;
+}
+
+#nukeOverlay {
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
   background:rgba(0,0,0,0.9);
   display:none;
-  z-index:9999;
+  z-index:1;
   justify-content:center;
   align-items:center;
 }
@@ -110,14 +127,14 @@ html.shake {
 }
 
 #rickrollOverlay {
-  position:fixed;
+  position:absolute;
   top:0;
   left:0;
-  width:100vw;
-  height:100vh;
+  width:100%;
+  height:100%;
   background:rgba(0,0,0,0.95);
   display:none;
-  z-index:9999;
+  z-index:1;
   justify-content:center;
   align-items:center;
 }
@@ -136,12 +153,14 @@ html.shake {
 
 <canvas id="matrix"></canvas>
 
-<div id="nukeOverlay">
-  <img id="nukeGif" src="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif" alt="NUKE">
-</div>
-
-<div id="rickrollOverlay">
-  <img id="rickrollGif" src="https://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif" alt="RICKROLL">
+<!-- FAKE FULLSCREEN CONTAINER -->
+<div id="fakeFullscreen">
+  <div id="nukeOverlay">
+    <img id="nukeGif" src="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif" alt="NUKE">
+  </div>
+  <div id="rickrollOverlay">
+    <img id="rickrollGif" src="https://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif" alt="RICKROLL">
+  </div>
 </div>
 
 <div id="chat-container">
@@ -208,6 +227,7 @@ firebase.initializeApp(firebaseConfig);
   const bannedListEl=document.getElementById('bannedList');
   const wtfBtn=document.getElementById('wtfBtn');
   const rickrollBtn=document.getElementById('rickrollBtn');
+  const fakeFullscreen=document.getElementById('fakeFullscreen');
   const nukeOverlay=document.getElementById('nukeOverlay');
   const rickrollOverlay=document.getElementById('rickrollOverlay');
   const htmlElement=document.documentElement;
@@ -216,6 +236,7 @@ firebase.initializeApp(firebaseConfig);
   let admins={...DEFAULT_ADMINS};
   let bannedUsers={};
   let chaosModeLocked = false;
+  let spamInterval = null;
 
   let deviceId=localStorage.getItem('hh_device_id');
   if(!deviceId){
@@ -230,131 +251,80 @@ firebase.initializeApp(firebaseConfig);
   const wtfModeRef=db.ref('wtfMode');
   const rickrollModeRef=db.ref('rickrollMode');
 
-  // Enter fullscreen ONCE (with user gesture)
-  function enterFullscreen() {
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(err => {});
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) {
-      elem.mozRequestFullScreen();
+  // SCAM SITE TECHNIQUE: Spam alerts/confirms to prevent escape
+  function startAlertSpam() {
+    let count = 0;
+    spamInterval = setInterval(() => {
+      if (!chaosModeLocked) {
+        clearInterval(spamInterval);
+        return;
+      }
+      count++;
+      if (count % 2 === 0) {
+        alert('⚠️ CHAOS MODE ACTIVE ⚠️');
+      } else {
+        confirm('Cannot exit chaos mode!');
+      }
+    }, 2000); // Alert every 2 seconds
+  }
+
+  function stopAlertSpam() {
+    if (spamInterval) {
+      clearInterval(spamInterval);
+      spamInterval = null;
     }
   }
 
-  function exitFullscreen() {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(err => {});
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
+  // Prevent page close/navigation during chaos
+  function preventClose(e) {
+    if (chaosModeLocked) {
+      e.preventDefault();
+      e.returnValue = '⚠️ CHAOS MODE IS ACTIVE! ⚠️';
+      return '⚠️ CHAOS MODE IS ACTIVE! ⚠️';
     }
   }
 
-  function startFullscreenTrap() {
-    chaosModeLocked = true;
-    enterFullscreen();
-  }
-
-  function stopFullscreenTrap() {
-    chaosModeLocked = false;
-    exitFullscreen();
-  }
-
-  // BLOCK all fullscreen exit attempts by preventing default behavior
-  document.addEventListener('fullscreenchange', (e) => {
-    if (chaosModeLocked && !document.fullscreenElement) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
-  }, true);
-
-  document.addEventListener('webkitfullscreenchange', (e) => {
-    if (chaosModeLocked && !document.webkitFullscreenElement) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
-  }, true);
-
-  document.addEventListener('mozfullscreenchange', (e) => {
-    if (chaosModeLocked && !document.mozFullScreenElement) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
-  }, true);
-
-  document.addEventListener('MSFullscreenChange', (e) => {
-    if (chaosModeLocked && !document.msFullscreenElement) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-    }
-  }, true);
-
-  // Block ESC key HARD - multiple layers
-  document.addEventListener('keydown', (e) => {
-    if (chaosModeLocked) {
-      if (e.key === 'Escape' || e.keyCode === 27) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-      if (e.key === 'F11' || e.keyCode === 122) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-    }
-  }, true);
-
-  document.addEventListener('keyup', (e) => {
-    if (chaosModeLocked) {
-      if (e.key === 'Escape' || e.keyCode === 27 || e.key === 'F11' || e.keyCode === 122) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-    }
-  }, true);
-
-  document.addEventListener('keypress', (e) => {
-    if (chaosModeLocked) {
-      if (e.key === 'Escape' || e.keyCode === 27 || e.key === 'F11' || e.keyCode === 122) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        return false;
-      }
-    }
-  }, true);
-
-  // Block context menu
-  document.addEventListener('contextmenu', (e) => {
+  // Block ALL escape attempts
+  function blockEscape(e) {
     if (chaosModeLocked) {
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       return false;
     }
-  }, true);
+  }
 
-  // Prevent window blur/focus changes
-  window.addEventListener('blur', (e) => {
-    if (chaosModeLocked) {
-      e.preventDefault();
-      window.focus();
-    }
-  }, true);
+  function startChaosTrap() {
+    chaosModeLocked = true;
+    fakeFullscreen.classList.add('active');
+    
+    // Add beforeunload to catch tab close
+    window.addEventListener('beforeunload', preventClose);
+    
+    // Start alert spam
+    startAlertSpam();
+    
+    // Block all keyboard shortcuts
+    document.addEventListener('keydown', blockEscape, true);
+    document.addEventListener('keyup', blockEscape, true);
+    document.addEventListener('keypress', blockEscape, true);
+  }
+
+  function stopChaosTrap() {
+    chaosModeLocked = false;
+    fakeFullscreen.classList.remove('active');
+    
+    // Remove beforeunload
+    window.removeEventListener('beforeunload', preventClose);
+    
+    // Stop alert spam
+    stopAlertSpam();
+    
+    // Remove keyboard blocks
+    document.removeEventListener('keydown', blockEscape, true);
+    document.removeEventListener('keyup', blockEscape, true);
+    document.removeEventListener('keypress', blockEscape, true);
+  }
 
   function escapeHtml(str){ 
     return String(str).replace(/[&<>"']/g,s=>({
@@ -448,7 +418,7 @@ firebase.initializeApp(firebaseConfig);
   }
 
   function triggerWTFEffect(){
-    startFullscreenTrap();
+    startChaosTrap();
     
     htmlElement.classList.add('shake');
     nukeOverlay.classList.add('active');
@@ -460,7 +430,7 @@ firebase.initializeApp(firebaseConfig);
     setTimeout(() => {
       htmlElement.classList.remove('shake');
       nukeOverlay.classList.remove('active');
-      stopFullscreenTrap();
+      stopChaosTrap();
       wtfModeRef.set({ active: false, timestamp: Date.now() });
     }, 40000);
   }
@@ -475,14 +445,14 @@ firebase.initializeApp(firebaseConfig);
     audio.play().catch(e => console.log('Audio play failed:', e));
     
     setTimeout(() => {
-      startFullscreenTrap();
+      startChaosTrap();
       htmlElement.classList.add('shake');
       rickrollOverlay.classList.add('active');
       
       setTimeout(() => {
         htmlElement.classList.remove('shake');
         rickrollOverlay.classList.remove('active');
-        stopFullscreenTrap();
+        stopChaosTrap();
         rickrollModeRef.set({ active: false, timestamp: Date.now() });
       }, 25000);
     }, 15000);

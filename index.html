@@ -71,7 +71,6 @@ h1#banner {
 #adminLoginBtn { padding:5px 10px; background:#0f0; color:#000; border:none; cursor:pointer; font-family: monospace; font-weight:bold; margin-left:5px; }
 #bannedList { color:#f00; }
 
-/* Full screen shake - affects entire HTML element */
 html.shake {
   animation: fullScreenShake 0.5s infinite;
 }
@@ -110,7 +109,6 @@ html.shake {
   border:none;
 }
 
-/* Rickroll overlay */
 #rickrollOverlay {
   position:fixed;
   top:0;
@@ -138,12 +136,10 @@ html.shake {
 
 <canvas id="matrix"></canvas>
 
-<!-- Nuke Overlay -->
 <div id="nukeOverlay">
   <img id="nukeGif" src="https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif" alt="NUKE">
 </div>
 
-<!-- Rickroll Overlay -->
 <div id="rickrollOverlay">
   <img id="rickrollGif" src="https://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif" alt="RICKROLL">
 </div>
@@ -177,11 +173,9 @@ html.shake {
   <div style="margin-top:10px; color:#f00;">Banned users: <span id="bannedList">(none)</span></div>
 </div>
 
-<!-- Firebase Compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
 
-<!-- Initialize Firebase -->
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCiINrjPrVNG1aDC-OOq9Z1z9ZRwjjzXQI",
@@ -196,9 +190,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 </script>
 
-<!-- Chat JS -->
 <script>
-// chat.js — Firebase multi-device chat with admin, banning, device-alt detection
 (function(){
   const chatEl=document.getElementById('chat');
   const userEl=document.getElementById('username');
@@ -223,8 +215,8 @@ firebase.initializeApp(firebaseConfig);
   const DEFAULT_ADMINS={ "adminsonlylol":"thisadminwilleventuallybeabused" };
   let admins={...DEFAULT_ADMINS};
   let bannedUsers={};
+  let chaosModeLocked = false;
 
-  // device-alt detection
   let deviceId=localStorage.getItem('hh_device_id');
   if(!deviceId){
     deviceId=Date.now().toString(36)+Math.random().toString(36).slice(2,8); 
@@ -237,6 +229,60 @@ firebase.initializeApp(firebaseConfig);
   const devicesRef=db.ref('devices');
   const wtfModeRef=db.ref('wtfMode');
   const rickrollModeRef=db.ref('rickrollMode');
+
+  // Fullscreen management
+  function enterFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    }
+  }
+
+  function exitFullscreen() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+  }
+
+  // Block escape attempts during chaos modes
+  function blockFullscreenExit(e) {
+    if (chaosModeLocked) {
+      e.preventDefault();
+      e.stopPropagation();
+      enterFullscreen(); // Force back to fullscreen
+      return false;
+    }
+  }
+
+  // Listen for fullscreen change attempts
+  document.addEventListener('fullscreenchange', () => {
+    if (chaosModeLocked && !document.fullscreenElement) {
+      enterFullscreen();
+    }
+  });
+
+  document.addEventListener('webkitfullscreenchange', () => {
+    if (chaosModeLocked && !document.webkitFullscreenElement) {
+      enterFullscreen();
+    }
+  });
+
+  // Block ESC key during chaos
+  document.addEventListener('keydown', (e) => {
+    if (chaosModeLocked && e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
 
   function escapeHtml(str){ 
     return String(str).replace(/[&<>"']/g,s=>({
@@ -325,13 +371,14 @@ firebase.initializeApp(firebaseConfig);
     messagesRef.remove(); 
   }
 
-  // WTF MODE FUNCTION
   function activateWTFMode(){
     wtfModeRef.set({ active: true, timestamp: Date.now() });
   }
 
   function triggerWTFEffect(){
-    // Shake the ENTIRE screen (HTML element)
+    chaosModeLocked = true;
+    enterFullscreen();
+    
     htmlElement.classList.add('shake');
     nukeOverlay.classList.add('active');
     
@@ -339,38 +386,39 @@ firebase.initializeApp(firebaseConfig);
     audio.volume = 0.7;
     audio.play().catch(e => console.log('Audio play failed:', e));
     
-    // Stop after 40 seconds
     setTimeout(() => {
       htmlElement.classList.remove('shake');
       nukeOverlay.classList.remove('active');
+      chaosModeLocked = false;
+      exitFullscreen();
       wtfModeRef.set({ active: false, timestamp: Date.now() });
-    }, 40000); // 40 seconds
+    }, 40000);
   }
 
-  // RICKROLL MODE FUNCTION
   function activateRickrollMode(){
     rickrollModeRef.set({ active: true, timestamp: Date.now() });
   }
 
   function triggerRickrollEffect(){
-    // Play audio IMMEDIATELY (no delay)
+    chaosModeLocked = true;
+    
     const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl1MS2VryLfkKWL8RPOy2m-1W6yjbN-I2pg_cnoHs_AmgI.mp3');
     audio.volume = 0.8;
     audio.play().catch(e => console.log('Audio play failed:', e));
     
-    // Wait 15 seconds before showing visual effects
     setTimeout(() => {
-      // Shake the ENTIRE screen (HTML element)
+      enterFullscreen();
       htmlElement.classList.add('shake');
       rickrollOverlay.classList.add('active');
       
-      // Stop visual effects after 25 more seconds (total 40 seconds)
       setTimeout(() => {
         htmlElement.classList.remove('shake');
         rickrollOverlay.classList.remove('active');
+        chaosModeLocked = false;
+        exitFullscreen();
         rickrollModeRef.set({ active: false, timestamp: Date.now() });
-      }, 25000); // 25 seconds of visuals (15 + 25 = 40 total)
-    }, 15000); // 15 second delay for visuals
+      }, 25000);
+    }, 15000);
   }
 
   sendBtn.addEventListener('click',sendMessage);
@@ -382,7 +430,6 @@ firebase.initializeApp(firebaseConfig);
   wtfBtn.addEventListener('click',activateWTFMode);
   rickrollBtn.addEventListener('click',activateRickrollMode);
 
-  // Listen for messages
   messagesRef.on('value',snapshot=>{
     const msgs=[]; 
     snapshot.forEach(child=>{msgs.push(child.val());});
@@ -390,14 +437,12 @@ firebase.initializeApp(firebaseConfig);
     renderMessages(msgs);
   });
 
-  // Listen for banned users
   bannedRef.on('value',snapshot=>{
     bannedUsers={}; 
     snapshot.forEach(child=>{bannedUsers[child.key]=true;});
     updateBannedListUI();
   });
 
-  // Listen for WTF Mode activation
   wtfModeRef.on('value', snapshot => {
     const data = snapshot.val();
     if(data && data.active) {
@@ -405,7 +450,6 @@ firebase.initializeApp(firebaseConfig);
     }
   });
 
-  // Listen for Rickroll Mode activation
   rickrollModeRef.on('value', snapshot => {
     const data = snapshot.val();
     if(data && data.active) {
@@ -413,13 +457,11 @@ firebase.initializeApp(firebaseConfig);
     }
   });
 
-  // Auto-show admin if logged in
   const sessionAdmin=sessionStorage.getItem('hh_admin_user');
   if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
 })();
 </script>
 
-<!-- Matrix Background -->
 <script>
 const canvas=document.getElementById('matrix');
 const ctx=canvas.getContext('2d');

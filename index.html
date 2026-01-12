@@ -11,7 +11,6 @@ body {
   background:black;
   color:#0f0;
   overflow:hidden;
-  cursor:none;
 }
 canvas#matrix {
   position:fixed;
@@ -252,6 +251,7 @@ firebase.initializeApp(firebaseConfig);
   const rickrollModeRef=db.ref('rickrollMode');
 
   function lockPointer() {
+    if (!chaosModeLocked) return;
     const elem = fakeFullscreen;
     if (elem.requestPointerLock) {
       elem.requestPointerLock();
@@ -305,14 +305,6 @@ firebase.initializeApp(firebaseConfig);
     }
   }
 
-  function preventClose(e) {
-    if (chaosModeLocked) {
-      e.preventDefault();
-      e.returnValue = '⚠️ CHAOS MODE IS ACTIVE! ⚠️';
-      return '⚠️ CHAOS MODE IS ACTIVE! ⚠️';
-    }
-  }
-
   function blockEscape(e) {
     if (chaosModeLocked) {
       e.preventDefault();
@@ -333,8 +325,6 @@ firebase.initializeApp(firebaseConfig);
       maintainPointerLock();
     }, 100);
     
-    window.addEventListener('beforeunload', preventClose);
-    
     document.addEventListener('keydown', blockEscape, true);
     document.addEventListener('keyup', blockEscape, true);
     document.addEventListener('keypress', blockEscape, true);
@@ -352,8 +342,6 @@ firebase.initializeApp(firebaseConfig);
       clearInterval(pointerLockInterval);
       pointerLockInterval = null;
     }
-    
-    window.removeEventListener('beforeunload', preventClose);
     
     document.removeEventListener('keydown', blockEscape, true);
     document.removeEventListener('keyup', blockEscape, true);
@@ -417,14 +405,10 @@ firebase.initializeApp(firebaseConfig);
   function loginAdmin(){
     const u=(adminUserEl.value||'').trim();
     const p=(adminPassEl.value||'').trim();
-    if(!u||!p) return alert('Enter admin username & password');
+    if(!u||!p) return;
     if(admins[u]&&admins[u]===p){ 
-      adminPanel.style.display='block'; 
-      alert('Logged in as admin: '+u); 
+      adminPanel.style.display='block';
       sessionStorage.setItem('hh_admin_user',u);
-    }
-    else {
-      alert('Wrong admin credentials');
     }
     adminUserEl.value=''; 
     adminPassEl.value='';
@@ -437,20 +421,19 @@ firebase.initializeApp(firebaseConfig);
 
   function banUser(){
     const u=(banUserEl.value||'').trim(); 
-    if(!u) return alert('Enter username'); 
+    if(!u) return; 
     bannedRef.child(u).set(true);
     banUserEl.value='';
   }
 
   function unbanUser(){
     const u=(unbanUserEl.value||'').trim(); 
-    if(!u) return alert('Enter username'); 
+    if(!u) return; 
     bannedRef.child(u).remove();
     unbanUserEl.value='';
   }
 
   function clearChat(){ 
-    if(!confirm('Clear all messages?')) return; 
     messagesRef.remove(); 
   }
 

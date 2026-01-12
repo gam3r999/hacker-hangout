@@ -216,6 +216,7 @@ firebase.initializeApp(firebaseConfig);
   let admins={...DEFAULT_ADMINS};
   let bannedUsers={};
   let chaosModeLocked = false;
+  let fullscreenInterval = null;
 
   let deviceId=localStorage.getItem('hh_device_id');
   if(!deviceId){
@@ -230,56 +231,108 @@ firebase.initializeApp(firebaseConfig);
   const wtfModeRef=db.ref('wtfMode');
   const rickrollModeRef=db.ref('rickrollMode');
 
-  // Fullscreen management
+  // AGGRESSIVE fullscreen management
   function enterFullscreen() {
     const elem = document.documentElement;
     if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
+      elem.requestFullscreen().catch(err => {});
     } else if (elem.webkitRequestFullscreen) {
       elem.webkitRequestFullscreen();
     } else if (elem.msRequestFullscreen) {
       elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
     }
   }
 
   function exitFullscreen() {
     if (document.exitFullscreen) {
-      document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
+      document.exitFullscreen().catch(err => {});
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
     } else if (document.msExitFullscreen) {
       document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
     }
   }
 
-  // Block escape attempts during chaos modes
-  function blockFullscreenExit(e) {
-    if (chaosModeLocked) {
-      e.preventDefault();
-      e.stopPropagation();
-      enterFullscreen(); // Force back to fullscreen
-      return false;
-    }
+  function startFullscreenTrap() {
+    chaosModeLocked = true;
+    enterFullscreen();
+    
+    // Aggressively check and re-enter fullscreen every 100ms
+    fullscreenInterval = setInterval(() => {
+      if (chaosModeLocked && !document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+        enterFullscreen();
+      }
+    }, 100);
   }
 
-  // Listen for fullscreen change attempts
+  function stopFullscreenTrap() {
+    chaosModeLocked = false;
+    if (fullscreenInterval) {
+      clearInterval(fullscreenInterval);
+      fullscreenInterval = null;
+    }
+    exitFullscreen();
+  }
+
+  // Block ALL escape attempts
   document.addEventListener('fullscreenchange', () => {
     if (chaosModeLocked && !document.fullscreenElement) {
-      enterFullscreen();
+      setTimeout(enterFullscreen, 10);
     }
   });
 
   document.addEventListener('webkitfullscreenchange', () => {
     if (chaosModeLocked && !document.webkitFullscreenElement) {
-      enterFullscreen();
+      setTimeout(enterFullscreen, 10);
     }
   });
 
-  // Block ESC key during chaos
+  document.addEventListener('mozfullscreenchange', () => {
+    if (chaosModeLocked && !document.mozFullScreenElement) {
+      setTimeout(enterFullscreen, 10);
+    }
+  });
+
+  document.addEventListener('MSFullscreenChange', () => {
+    if (chaosModeLocked && !document.msFullscreenElement) {
+      setTimeout(enterFullscreen, 10);
+    }
+  });
+
+  // Block escape key HARD
   document.addEventListener('keydown', (e) => {
-    if (chaosModeLocked && e.key === 'Escape') {
+    if (chaosModeLocked) {
+      if (e.key === 'Escape' || e.keyCode === 27) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        enterFullscreen();
+        return false;
+      }
+      // Block F11 too
+      if (e.key === 'F11' || e.keyCode === 122) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }
+  }, true);
+
+  // Block mouse clicks trying to exit
+  document.addEventListener('click', (e) => {
+    if (chaosModeLocked && !document.fullscreenElement) {
+      enterFullscreen();
+    }
+  }, true);
+
+  // Prevent context menu during chaos
+  document.addEventListener('contextmenu', (e) => {
+    if (chaosModeLocked) {
       e.preventDefault();
-      e.stopPropagation();
       return false;
     }
   });
@@ -376,8 +429,7 @@ firebase.initializeApp(firebaseConfig);
   }
 
   function triggerWTFEffect(){
-    chaosModeLocked = true;
-    enterFullscreen();
+    startFullscreenTrap();
     
     htmlElement.classList.add('shake');
     nukeOverlay.classList.add('active');
@@ -389,8 +441,7 @@ firebase.initializeApp(firebaseConfig);
     setTimeout(() => {
       htmlElement.classList.remove('shake');
       nukeOverlay.classList.remove('active');
-      chaosModeLocked = false;
-      exitFullscreen();
+      stopFullscreenTrap();
       wtfModeRef.set({ active: false, timestamp: Date.now() });
     }, 40000);
   }
@@ -400,22 +451,19 @@ firebase.initializeApp(firebaseConfig);
   }
 
   function triggerRickrollEffect(){
-    chaosModeLocked = true;
-    
     const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl1MS2VryLfkKWL8RPOy2m-1W6yjbN-I2pg_cnoHs_AmgI.mp3');
     audio.volume = 0.8;
     audio.play().catch(e => console.log('Audio play failed:', e));
     
     setTimeout(() => {
-      enterFullscreen();
+      startFullscreenTrap();
       htmlElement.classList.add('shake');
       rickrollOverlay.classList.add('active');
       
       setTimeout(() => {
         htmlElement.classList.remove('shake');
         rickrollOverlay.classList.remove('active');
-        chaosModeLocked = false;
-        exitFullscreen();
+        stopFullscreenTrap();
         rickrollModeRef.set({ active: false, timestamp: Date.now() });
       }, 25000);
     }, 15000);

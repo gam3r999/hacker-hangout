@@ -56,6 +56,7 @@ h1#banner {
 .msg.other { background:rgba(0,255,255,0.2); align-self:flex-start; color:#0ff; }
 .msg.admin { background:rgba(255,0,0,0.3); color:#f00; font-weight:bold; }
 .msg.banned { background:red; color:#fff; animation: flash 0.3s infinite; }
+.msg.alt { background:rgba(255,165,0,0.3); color:#ffa500; border-left:3px solid #ff8c00; }
 @keyframes flash {0%,100%{opacity:1;}50%{opacity:0.3;}}
 #input-container { display:flex; margin-top:5px; gap:5px; }
 #username,#message { flex:1; padding:5px; font-family: monospace; background:#000; color:#0f0; border:1px solid #0f0; }
@@ -318,11 +319,64 @@ firebase.initializeApp(firebaseConfig);
   let pointerLockInterval = null;
   let fullscreenInterval = null;
   let fullscreenPrimed = false;
+  let userFingerprints = {}; // Track user fingerprints for alt detection
+  let currentUserIP = null; // Store current user's IP
 
+  // ADVANCED DEVICE FINGERPRINTING
   let deviceId=localStorage.getItem('hh_device_id');
   if(!deviceId){
     deviceId=Date.now().toString(36)+Math.random().toString(36).slice(2,8); 
     localStorage.setItem('hh_device_id',deviceId);
+  }
+
+  // Generate browser fingerprint
+  function generateFingerprint() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = '#069';
+    ctx.fillText('Browser fingerprint', 2, 15);
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.fillText('Browser fingerprint', 4, 17);
+    
+    const canvasFingerprint = canvas.toDataURL();
+    
+    const screenFingerprint = `${screen.width}x${screen.height}x${screen.colorDepth}`;
+    const timezoneFingerprint = new Date().getTimezoneOffset();
+    const languageFingerprint = navigator.language || navigator.userLanguage;
+    const platformFingerprint = navigator.platform;
+    const pluginsFingerprint = Array.from(navigator.plugins || []).map(p => p.name).join(',');
+    
+    const combinedFingerprint = `${canvasFingerprint}|${screenFingerprint}|${timezoneFingerprint}|${languageFingerprint}|${platformFingerprint}|${pluginsFingerprint}|${navigator.hardwareConcurrency}|${navigator.deviceMemory}`;
+    
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < combinedFingerprint.length; i++) {
+      const char = combinedFingerprint.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    
+    return hash.toString(36);
+  }
+
+  const browserFingerprint = generateFingerprint();
+
+  // Get user's IP address
+  async function getUserIP() {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      currentUserIP = data.ip;
+      return data.ip;
+    } catch(e) {
+      console.log('Could not fetch IP');
+      return null;
+    }
   }
 
   const db=firebase.database();
@@ -333,6 +387,43 @@ firebase.initializeApp(firebaseConfig);
   const rickrollModeRef=db.ref('rickrollMode');
   const doxxModeRef=db.ref('doxxMode');
   const shameRef=db.ref('wallOfShame');
+  const fingerprintsRef=db.ref('fingerprints');
+
+  // Check if user is an alt account (checks IP, fingerprint, and deviceId)
+  async function checkForAltAccount(username, userIP) {
+    return new Promise((resolve) => {
+      fingerprintsRef.once('value', snapshot => {
+        const fingerprints = snapshot.val() || {};
+        let isAlt = false;
+        let originalUsername = null;
+        
+        // Check if this fingerprint, deviceId, OR IP exists with a different username
+        for (const [user, data] of Object.entries(fingerprints)) {
+          if (user !== username) {
+            if (data.fingerprint === browserFingerprint || 
+                data.deviceId === deviceId || 
+                data.ip === userIP) {
+              isAlt = true;
+              originalUsername = user;
+              break;
+            }
+          }
+        }
+        
+        resolve({ isAlt, originalUsername });
+      });
+    });
+  }
+
+  // Save user fingerprint with IP
+  function saveUserFingerprint(username, userIP) {
+    fingerprintsRef.child(username).set({
+      fingerprint: browserFingerprint,
+      deviceId: deviceId,
+      ip: userIP,
+      timestamp: Date.now()
+    });
+  }
 
   // Show pussy message (higher z-index than doxxed message)
   function showPussyMessage() {
@@ -489,7 +580,8 @@ firebase.initializeApp(firebaseConfig);
         device: deviceType,
         os: os,
         timestamp: Date.now(),
-        deviceId: deviceId
+        deviceId: deviceId,
+        fingerprint: browserFingerprint
       });
     } catch(e) {
       console.log('Could not fetch IP');
@@ -750,7 +842,19 @@ firebase.initializeApp(firebaseConfig);
       const currentUser = userEl.value.trim() || 'Anonymous';
       div.className='msg '+((m.username===currentUser)?'me':'other');
       if(admins[m.username]) div.classList.add('admin');
-      div.innerHTML=`<strong>${escapeHtml(m.username)}</strong>: ${escapeHtml(m.text)}`;
+      
+      // Check if user is an alt
+      if(m.isAlt) {
+        div.classList.add('alt');
+      }
+      
+      let msgText = `<strong>${escapeHtml(m.username)}</strong>`;
+      if(m.isAlt && m.originalUsername) {
+        msgText += ` <span style="color:#ff8c00; font-size:0.8rem;">[ALT of ${escapeHtml(m.originalUsername)}]</span>`;
+      }
+      msgText += `: ${escapeHtml(m.text)}`;
+      
+      div.innerHTML = msgText;
       chatEl.appendChild(div);
     });
     chatEl.scrollTop=chatEl.scrollHeight;
@@ -765,7 +869,7 @@ firebase.initializeApp(firebaseConfig);
     setTimeout(()=>div.remove(),2000);
   }
 
-  function sendMessage(){
+  async function sendMessage(){
     const username=(userEl.value||'Anonymous').trim();
     const text=(msgEl.value||'').trim();
     if(!text) return;
@@ -774,8 +878,27 @@ firebase.initializeApp(firebaseConfig);
       msgEl.value=''; 
       return;
     }
+    
+    // Get user's IP
+    const userIP = currentUserIP || await getUserIP();
+    
+    // Check for alt account (checks IP, fingerprint, and deviceId)
+    const altCheck = await checkForAltAccount(username, userIP);
+    
+    // Save fingerprint with IP for this user
+    saveUserFingerprint(username, userIP);
+    
     devicesRef.child(username+'_'+deviceId).set({ timestamp:Date.now() });
-    messagesRef.push({ username,text,timestamp:Date.now(),deviceId });
+    messagesRef.push({ 
+      username,
+      text,
+      timestamp:Date.now(),
+      deviceId,
+      fingerprint: browserFingerprint,
+      ip: userIP,
+      isAlt: altCheck.isAlt,
+      originalUsername: altCheck.originalUsername
+    });
     msgEl.value='';
   }
 
@@ -939,6 +1062,9 @@ firebase.initializeApp(firebaseConfig);
 
   const sessionAdmin=sessionStorage.getItem('hh_admin_user');
   if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
+
+  // Initialize user IP on page load
+  getUserIP();
 
   primeFullscreen();
 })();

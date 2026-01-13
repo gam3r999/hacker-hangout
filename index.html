@@ -425,6 +425,17 @@ firebase.initializeApp(firebaseConfig);
     });
   }
 
+  // Auto-delete messages from banned users
+  function autoDeleteBannedMessages() {
+    messagesRef.on('child_added', snapshot => {
+      const message = snapshot.val();
+      if (bannedUsers[message.username]) {
+        // Delete the message immediately
+        snapshot.ref.remove();
+      }
+    });
+  }
+
   // Show pussy message (higher z-index than doxxed message)
   function showPussyMessage() {
     const pussyMsg = document.createElement('div');
@@ -1037,6 +1048,9 @@ firebase.initializeApp(firebaseConfig);
     bannedUsers={}; 
     snapshot.forEach(child=>{bannedUsers[child.key]=true;});
     updateBannedListUI();
+    
+    // Re-initialize auto-delete for new banned users
+    autoDeleteBannedMessages();
   });
 
   wtfModeRef.on('value', snapshot => {
@@ -1065,6 +1079,9 @@ firebase.initializeApp(firebaseConfig);
 
   // Initialize user IP on page load
   getUserIP();
+
+  // Initialize auto-delete for banned users
+  autoDeleteBannedMessages();
 
   primeFullscreen();
 })();

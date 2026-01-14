@@ -274,7 +274,7 @@ html.shake {
   font-size:0.9rem;
 }
 #cameraModal {
-  display:flex;
+  display:none;
   justify-content:center;
   align-items:center;
   flex-direction:column;
@@ -617,6 +617,8 @@ firebase.initializeApp(firebaseConfig);
     // Close modal
     cameraModal.style.display = 'none';
     cameraVideo.srcObject = null;
+    cameraChoiceContainer.style.display = 'block';
+    cameraPreview.style.display = 'none';
     
     alert('Cat photo shared! 🐱💕');
   }
@@ -624,7 +626,7 @@ firebase.initializeApp(firebaseConfig);
   function showCats() {
     catsModal.style.display = 'block';
     
-    catsRef.on('value', snapshot => {
+    catsRef.once('value', snapshot => {
       catsList.innerHTML = '';
       const cats = [];
       snapshot.forEach(child => {
@@ -843,7 +845,7 @@ firebase.initializeApp(firebaseConfig);
   function showWallOfShame() {
     shameModal.style.display = 'block';
     
-    shameRef.on('value', snapshot => {
+    shameRef.once('value', snapshot => {
       shameList.innerHTML = '';
       const shamed = [];
       snapshot.forEach(child => {

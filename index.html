@@ -269,6 +269,7 @@ html.shake {
 
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-auth-compat.js"></script>
 
 <script>
 const firebaseConfig = {
@@ -314,8 +315,8 @@ firebase.initializeApp(firebaseConfig);
   const rickrollOverlay=document.getElementById('rickrollOverlay');
   const htmlElement=document.documentElement;
 
-  const DEFAULT_ADMINS={ "adminsonlylol":"thisadminwilleventuallybeabused" };
-  let admins={...DEFAULT_ADMINS};
+  // no credentials in source — auth handled by Firebase Auth
+  let admins={};
   let bannedUsers={};
   let chaosModeLocked = false;
   let trapActive = false;
@@ -918,14 +919,23 @@ firebase.initializeApp(firebaseConfig);
   }
 
   function loginAdmin(){
-    const u=(adminUserEl.value||'').trim();
-    const p=(adminPassEl.value||'').trim();
-    if(!u||!p) return;
-    if(admins[u]&&admins[u]===p){ 
-      adminPanel.style.display='block';
-      sessionStorage.setItem('hh_admin_user',u);
-    }
-    adminUserEl.value=''; 
+    const email=(adminUserEl.value||'').trim();
+    const pass=(adminPassEl.value||'').trim();
+    if(!email||!pass) return;
+    adminLoginBtn.textContent='...';
+    adminLoginBtn.disabled=true;
+    firebase.auth().signInWithEmailAndPassword(email,pass)
+      .then(cred=>{
+        adminPanel.style.display='block';
+        adminLoginBtn.textContent='Login as Admin';
+        adminLoginBtn.disabled=false;
+      })
+      .catch(err=>{
+        adminLoginBtn.textContent='wrong';
+        adminLoginBtn.disabled=false;
+        setTimeout(()=>{adminLoginBtn.textContent='Login as Admin';},1500);
+      });
+    adminUserEl.value='';
     adminPassEl.value='';
   }
 
@@ -1118,8 +1128,10 @@ firebase.initializeApp(firebaseConfig);
     }
   });
 
-  const sessionAdmin=sessionStorage.getItem('hh_admin_user');
-  if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
+  firebase.auth().onAuthStateChanged(user=>{
+    if(user){adminPanel.style.display='block';}
+    else{adminPanel.style.display='none';}
+  });
 
   // Initialize user IP on page load
   getUserIP();

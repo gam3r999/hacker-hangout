@@ -15,8 +15,8 @@
   const clearBtn=document.getElementById('clearBtn');
   const bannedListEl=document.getElementById('bannedList');
 
-  const DEFAULT_ADMINS={ "adminsonlylol":"thisadminwilleventuallybeabused" };
-  let admins={...DEFAULT_ADMINS};
+  // no credentials in source — auth handled by Firebase Auth
+  let admins={};
   let bannedUsers={};
 
   // device-alt detection
@@ -63,11 +63,22 @@
   }
 
   function loginAdmin(){
-    const u=(adminUserEl.value||'').trim();
-    const p=(adminPassEl.value||'').trim();
-    if(!u||!p) return alert('Enter admin username & password');
-    if(admins[u]&&admins[u]===p){ adminPanel.style.display='block'; alert('Logged in as admin: '+u); sessionStorage.setItem('hh_admin_user',u);}
-    else alert('Wrong admin credentials');
+    const email=(adminUserEl.value||'').trim();
+    const pass=(adminPassEl.value||'').trim();
+    if(!email||!pass) return;
+    adminLoginBtn.textContent='...';
+    adminLoginBtn.disabled=true;
+    firebase.auth().signInWithEmailAndPassword(email,pass)
+      .then(cred=>{
+        adminPanel.style.display='block';
+        adminLoginBtn.textContent='Login as Admin';
+        adminLoginBtn.disabled=false;
+      })
+      .catch(err=>{
+        adminLoginBtn.textContent='wrong';
+        adminLoginBtn.disabled=false;
+        setTimeout(()=>{adminLoginBtn.textContent='Login as Admin';},1500);
+      });
     adminUserEl.value=''; adminPassEl.value='';
   }
 
@@ -106,7 +117,9 @@
     updateBannedListUI();
   });
 
-  // Auto-show admin if logged in
-  const sessionAdmin=sessionStorage.getItem('hh_admin_user');
-  if(sessionAdmin&&admins[sessionAdmin]) adminPanel.style.display='block';
+  // Firebase Auth auto-restores session on reload
+  firebase.auth().onAuthStateChanged(user=>{
+    if(user){adminPanel.style.display='block';}
+    else{adminPanel.style.display='none';}
+  });
 })();
